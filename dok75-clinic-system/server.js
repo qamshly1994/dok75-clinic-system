@@ -1,7 +1,7 @@
 /**
  * ============================================
  * DOK75 - نظام إدارة العيادات المتعددة
- * الملف الرئيسي للتطبيق
+ * الملف الرئيسي للتطبيق (نسخة Pro مع Auto Seed)
  * ============================================
  */
 
@@ -13,12 +13,16 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
+const fs = require('fs');
 
 // تحميل متغيرات البيئة
 dotenv.config();
 
 // استيراد الاتصال بقاعدة البيانات
 const { sequelize } = require('./models');
+
+// استيراد دالة Auto Seed
+const seedAdmin = require('./scripts/seed');
 
 // استيراد المسارات (Routes)
 const authRoutes = require('./routes/auth');
@@ -146,6 +150,12 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
+// إنشاء مجلد logs إذا لم يكن موجوداً
+const logsDir = path.join(__dirname, 'logs');
+if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+}
+
 // اختبار الاتصال بقاعدة البيانات
 const startServer = async () => {
     try {
@@ -161,6 +171,10 @@ const startServer = async () => {
             await sequelize.sync();
             console.log('✅ تم التحقق من النماذج');
         }
+
+        // ✅ تشغيل Auto Seed Admin (إنشاء المشرف العام إذا لم يكن موجوداً)
+        await seedAdmin();
+        console.log('✅ تم التحقق من وجود المشرف العام');
 
         // تشغيل الخادم
         app.listen(PORT, () => {
