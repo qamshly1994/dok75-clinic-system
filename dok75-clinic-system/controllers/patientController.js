@@ -1,1 +1,0 @@
-// patientController.js
