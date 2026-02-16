@@ -1,252 +1,87 @@
-const { Patient, Appointment, User, Clinic } = require('../models');
+const { Appointment, Patient, User, Clinic, Department, Specialization } = require('../models');
 const { Op } = require('sequelize');
 
-// ✅ إنشاء مريض جديد
-const createPatient = async (req, res) => {
+// ✅ إنشاء موعد جديد
+const createAppointment = async (req, res) => {
     try {
         const { 
-            full_name, phone, alternate_phone, email, age, 
-            gender, address, medical_history, medications, 
-            allergies, clinic_id 
+            appointment_date, patient_id, doctor_id, clinic_id,
+            department_id, specialization_id, notes 
         } = req.body;
 
-        // التحقق من وجود العيادة
-        const clinic = await Clinic.findByPk(clinic_id);
-        if (!clinic) {
-            return res.status(404).json({ error: 'العيادة غير موجودة' });
+        // التحقق من وجود المريض
+        const patient = await Patient.findByPk(patient_id);
+        if (!patient) {
+            return res.status(404).json({ error: 'المريض غير موجود' });
         }
 
-        // إنشاء المريض
-        const patient = await Patient.create({
-            full_name,
-            phone,
-            alternate_phone,
-            email,
-            age,
-            gender,
-            address,
-            medical_history,
-            medications,
-            allergies,
+        // التحقق من وجود الطبيب
+        const doctor = await User.findOne({ 
+            where: { id: doctor_id, role: 'doctor', is_active: true } 
+        });
+        if (!doctor) {
+            return res.status(404).json({ error: 'الطبيب غير موجود' });
+        }
+
+        // إنشاء الموعد
+        const appointment = await Appointment.create({
+            appointment_date,
+            patient_id,
+            doctor_id,
             clinic_id,
+            department_id,
+            specialization_id,
+            notes,
             created_by: req.user.id,
-            is_active: true
+            status: 'pending'
         });
 
         res.status(201).json({
             success: true,
-            message: '✅ تم إضافة المريض بنجاح',
-            patient
+            message: '✅ تم إنشاء الموعد بنجاح',
+            appointment
         });
     } catch (error) {
-        console.error('❌ خطأ في إنشاء المريض:', error);
+        console.error('❌ خطأ في إنشاء الموعد:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
 
-// ✅ عرض جميع المرضى (مع فلترة حسب الصلاحيات)
-const getAllPatients = async (req, res) => {
+// ✅ عرض جميع المواعيد (مع فلترة)
+const getAllAppointments = async (req, res) => {
     try {
-        let whereClause = { is_active: true };
+        const { startDate, endDate, status, doctor_id, patient_id } = req.query;
+        let whereClause = {};
 
-        // إذا كان المستخدم دكتور، يرى فقط مرضى عيادته
+        if (startDate && endDate) {
+            whereClause.appointment_date = {
+                [Op.between]: [new Date(startDate), new Date(endDate)]
+            };
+        }
+
+        if (status) whereClause.status = status;
+        if (doctor_id) whereClause.doctor_id = doctor_id;
+        if (patient_id) whereClause.patient_id = patient_id;
+
+        // إذا كان المستخدم دكتور، يرى فقط مواعيده
         if (req.user.role === 'doctor') {
-            whereClause.clinic_id = req.user.clinic_id;
-        }
-
-        const patients = await Patient.findAll({
-            where: whereClause,
-            include: [
-                { model: Clinic, as: 'clinic' },
-                { 
-                    model: User, 
-                    as: 'creator',
-                    attributes: ['id', 'full_name', 'username']
-                }
-            ],
-            order: [['createdAt', 'DESC']]
-        });
-
-        res.json({
-            success: true,
-            count: patients.length,
-            patients
-        });
-    } catch (error) {
-        console.error('❌ خطأ في جلب المرضى:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// ✅ عرض مريض محدد
-const getPatientById = async (req, res) => {
-    try {
-        const patient = await Patient.findByPk(req.params.id, {
-            include: [
-                { model: Clinic, as: 'clinic' },
-                { 
-                    model: User, 
-                    as: 'creator',
-                    attributes: ['id', 'full_name', 'username']
-                },
-                {
-                    model: Appointment,
-                    as: 'appointments',
-                    include: [
-                        { 
-                            model: User, 
-                            as: 'doctor',
-                            attributes: ['id', 'full_name']
-                        }
-                    ],
-                    order: [['appointment_date', 'DESC']],
-                    limit: 10
-                }
-            ]
-        });
-
-        if (!patient) {
-            return res.status(404).json({ error: 'المريض غير موجود' });
-        }
-
-        // التحقق من الصلاحيات
-        if (req.user.role === 'doctor' && patient.clinic_id !== req.user.clinic_id) {
-            return res.status(403).json({ error: 'لا يمكنك عرض مرضى عيادة أخرى' });
-        }
-
-        res.json({ success: true, patient });
-    } catch (error) {
-        console.error('❌ خطأ في جلب المريض:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// ✅ تحديث بيانات مريض
-const updatePatient = async (req, res) => {
-    try {
-        const patient = await Patient.findByPk(req.params.id);
-
-        if (!patient) {
-            return res.status(404).json({ error: 'المريض غير موجود' });
-        }
-
-        // التحقق من الصلاحيات
-        if (req.user.role === 'doctor' && patient.clinic_id !== req.user.clinic_id) {
-            return res.status(403).json({ error: 'لا يمكنك تعديل مرضى عيادة أخرى' });
-        }
-
-        const { 
-            full_name, phone, alternate_phone, email, age, 
-            gender, address, medical_history, medications, allergies 
-        } = req.body;
-
-        await patient.update({
-            full_name: full_name || patient.full_name,
-            phone: phone || patient.phone,
-            alternate_phone: alternate_phone || patient.alternate_phone,
-            email: email || patient.email,
-            age: age || patient.age,
-            gender: gender || patient.gender,
-            address: address || patient.address,
-            medical_history: medical_history || patient.medical_history,
-            medications: medications || patient.medications,
-            allergies: allergies || patient.allergies
-        });
-
-        res.json({
-            success: true,
-            message: '✅ تم تحديث بيانات المريض بنجاح',
-            patient
-        });
-    } catch (error) {
-        console.error('❌ خطأ في تحديث المريض:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// ✅ حذف مريض (للسوبر أدمن فقط)
-const deletePatient = async (req, res) => {
-    try {
-        const patient = await Patient.findByPk(req.params.id);
-
-        if (!patient) {
-            return res.status(404).json({ error: 'المريض غير موجود' });
-        }
-
-        if (req.user.role !== 'super_admin') {
-            return res.status(403).json({ error: 'لا يمكنك حذف المريض' });
-        }
-
-        await patient.destroy();
-
-        res.json({ 
-            success: true, 
-            message: '✅ تم حذف المريض بنجاح' 
-        });
-    } catch (error) {
-        console.error('❌ خطأ في حذف المريض:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// ✅ البحث عن مريض
-const searchPatients = async (req, res) => {
-    try {
-        const { query } = req.params;
-        let whereClause = {
-            [Op.or]: [
-                { full_name: { [Op.iLike]: `%${query}%` } },
-                { phone: { [Op.iLike]: `%${query}%` } },
-                { email: { [Op.iLike]: `%${query}%` } }
-            ]
-        };
-
-        // إذا كان المستخدم دكتور، يرى فقط مرضى عيادته
-        if (req.user.role === 'doctor') {
-            whereClause.clinic_id = req.user.clinic_id;
-        }
-
-        const patients = await Patient.findAll({
-            where: whereClause,
-            limit: 20,
-            order: [['full_name', 'ASC']]
-        });
-
-        res.json({
-            success: true,
-            count: patients.length,
-            patients
-        });
-    } catch (error) {
-        console.error('❌ خطأ في البحث عن المرضى:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// ✅ عرض مواعيد مريض
-const getPatientAppointments = async (req, res) => {
-    try {
-        const patient = await Patient.findByPk(req.params.id);
-
-        if (!patient) {
-            return res.status(404).json({ error: 'المريض غير موجود' });
-        }
-
-        // التحقق من الصلاحيات
-        if (req.user.role === 'doctor' && patient.clinic_id !== req.user.clinic_id) {
-            return res.status(403).json({ error: 'لا يمكنك عرض مواعيد مرضى عيادة أخرى' });
+            whereClause.doctor_id = req.user.id;
         }
 
         const appointments = await Appointment.findAll({
-            where: { patient_id: patient.id },
+            where: whereClause,
             include: [
+                { model: Patient, as: 'patient' },
                 { 
                     model: User, 
                     as: 'doctor',
                     attributes: ['id', 'full_name']
-                }
+                },
+                { model: Clinic, as: 'clinic' },
+                { model: Department, as: 'department' },
+                { model: Specialization, as: 'specialization' }
             ],
-            order: [['appointment_date', 'DESC']]
+            order: [['appointment_date', 'ASC']]
         });
 
         res.json({
@@ -260,59 +95,242 @@ const getPatientAppointments = async (req, res) => {
     }
 };
 
-// ✅ عرض تاريخ علاج مريض
-const getPatientMedicalHistory = async (req, res) => {
+// ✅ عرض موعد محدد
+const getAppointmentById = async (req, res) => {
     try {
-        const patient = await Patient.findByPk(req.params.id);
-
-        if (!patient) {
-            return res.status(404).json({ error: 'المريض غير موجود' });
-        }
-
-        // التحقق من الصلاحيات
-        if (req.user.role === 'doctor' && patient.clinic_id !== req.user.clinic_id) {
-            return res.status(403).json({ error: 'لا يمكنك عرض تاريخ مرضى عيادة أخرى' });
-        }
-
-        const completedAppointments = await Appointment.findAll({
-            where: { 
-                patient_id: patient.id,
-                status: 'completed'
-            },
+        const appointment = await Appointment.findByPk(req.params.id, {
             include: [
+                { model: Patient, as: 'patient' },
+                { 
+                    model: User, 
+                    as: 'doctor',
+                    attributes: ['id', 'full_name']
+                },
+                { model: Clinic, as: 'clinic' },
+                { model: Department, as: 'department' },
+                { model: Specialization, as: 'specialization' },
+                { 
+                    model: User, 
+                    as: 'creator',
+                    attributes: ['id', 'full_name']
+                }
+            ]
+        });
+
+        if (!appointment) {
+            return res.status(404).json({ error: 'الموعد غير موجود' });
+        }
+
+        res.json({ success: true, appointment });
+    } catch (error) {
+        console.error('❌ خطأ في جلب الموعد:', error);
+        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+    }
+};
+
+// ✅ تحديث موعد
+const updateAppointment = async (req, res) => {
+    try {
+        const appointment = await Appointment.findByPk(req.params.id);
+
+        if (!appointment) {
+            return res.status(404).json({ error: 'الموعد غير موجود' });
+        }
+
+        const { appointment_date, doctor_id, department_id, specialization_id, notes } = req.body;
+
+        await appointment.update({
+            appointment_date: appointment_date || appointment.appointment_date,
+            doctor_id: doctor_id || appointment.doctor_id,
+            department_id: department_id || appointment.department_id,
+            specialization_id: specialization_id || appointment.specialization_id,
+            notes: notes || appointment.notes
+        });
+
+        res.json({
+            success: true,
+            message: '✅ تم تحديث الموعد بنجاح',
+            appointment
+        });
+    } catch (error) {
+        console.error('❌ خطأ في تحديث الموعد:', error);
+        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+    }
+};
+
+// ✅ إلغاء موعد
+const cancelAppointment = async (req, res) => {
+    try {
+        const appointment = await Appointment.findByPk(req.params.id);
+
+        if (!appointment) {
+            return res.status(404).json({ error: 'الموعد غير موجود' });
+        }
+
+        await appointment.update({ status: 'cancelled' });
+
+        res.json({
+            success: true,
+            message: '✅ تم إلغاء الموعد بنجاح'
+        });
+    } catch (error) {
+        console.error('❌ خطأ في إلغاء الموعد:', error);
+        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+    }
+};
+
+// ✅ تغيير حالة الموعد
+const updateAppointmentStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        const appointment = await Appointment.findByPk(req.params.id);
+
+        if (!appointment) {
+            return res.status(404).json({ error: 'الموعد غير موجود' });
+        }
+
+        const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ error: 'حالة غير صالحة' });
+        }
+
+        await appointment.update({ status });
+
+        res.json({
+            success: true,
+            message: `✅ تم تغيير حالة الموعد إلى: ${
+                status === 'pending' ? 'معلق' :
+                status === 'confirmed' ? 'مؤكد' :
+                status === 'completed' ? 'مكتمل' : 'ملغي'
+            }`,
+            status
+        });
+    } catch (error) {
+        console.error('❌ خطأ في تغيير حالة الموعد:', error);
+        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+    }
+};
+
+// ✅ عرض مواعيد طبيب محدد
+const getDoctorAppointments = async (req, res) => {
+    try {
+        const { doctorId } = req.params;
+        const { date } = req.query;
+
+        let whereClause = { doctor_id: doctorId };
+
+        if (date) {
+            const startOfDay = new Date(date);
+            startOfDay.setHours(0, 0, 0, 0);
+            
+            const endOfDay = new Date(date);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            whereClause.appointment_date = {
+                [Op.between]: [startOfDay, endOfDay]
+            };
+        }
+
+        const appointments = await Appointment.findAll({
+            where: whereClause,
+            include: [
+                { model: Patient, as: 'patient' },
+                { model: Department, as: 'department' },
+                { model: Specialization, as: 'specialization' }
+            ],
+            order: [['appointment_date', 'ASC']]
+        });
+
+        res.json({
+            success: true,
+            count: appointments.length,
+            appointments
+        });
+    } catch (error) {
+        console.error('❌ خطأ في جلب مواعيد الطبيب:', error);
+        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+    }
+};
+
+// ✅ عرض مواعيد يوم محدد
+const getAppointmentsByDate = async (req, res) => {
+    try {
+        const { date } = req.params;
+        
+        const startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const whereClause = {
+            appointment_date: {
+                [Op.between]: [startOfDay, endOfDay]
+            }
+        };
+
+        const appointments = await Appointment.findAll({
+            where: whereClause,
+            include: [
+                { model: Patient, as: 'patient' },
                 { 
                     model: User, 
                     as: 'doctor',
                     attributes: ['id', 'full_name']
                 }
             ],
+            order: [['appointment_date', 'ASC']]
+        });
+
+        res.json({
+            success: true,
+            count: appointments.length,
+            appointments
+        });
+    } catch (error) {
+        console.error('❌ خطأ في جلب مواعيد اليوم:', error);
+        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+    }
+};
+
+// ✅ عرض مواعيد مريض محدد
+const getPatientAppointments = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+
+        const appointments = await Appointment.findAll({
+            where: { patient_id: patientId },
+            include: [
+                { 
+                    model: User, 
+                    as: 'doctor',
+                    attributes: ['id', 'full_name']
+                },
+                { model: Department, as: 'department' },
+                { model: Specialization, as: 'specialization' }
+            ],
             order: [['appointment_date', 'DESC']]
         });
 
         res.json({
             success: true,
-            patient: {
-                id: patient.id,
-                full_name: patient.full_name,
-                medical_history: patient.medical_history,
-                medications: patient.medications,
-                allergies: patient.allergies
-            },
-            appointments: completedAppointments
+            count: appointments.length,
+            appointments
         });
     } catch (error) {
-        console.error('❌ خطأ في جلب التاريخ الطبي:', error);
+        console.error('❌ خطأ في جلب مواعيد المريض:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
 
 module.exports = {
-    createPatient,
-    getAllPatients,
-    getPatientById,
-    updatePatient,
-    deletePatient,
-    searchPatients,
-    getPatientAppointments,
-    getPatientMedicalHistory
+    createAppointment,
+    getAllAppointments,
+    getAppointmentById,
+    updateAppointment,
+    cancelAppointment,
+    updateAppointmentStatus,
+    getDoctorAppointments,
+    getAppointmentsByDate,
+    getPatientAppointments
 };
