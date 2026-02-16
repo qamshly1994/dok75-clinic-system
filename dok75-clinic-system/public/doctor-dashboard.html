@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOK75 - لوحة تحكم الطبيب</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .schedule-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .time-slot {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .time-slot:last-child {
+            border-bottom: none;
+        }
+        
+        .slot-time {
+            background: #006D77;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-left: 20px;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .patient-info {
+            flex: 1;
+        }
+        
+        .patient-name {
+            font-weight: 700;
+            color: #2C3E50;
+            margin-bottom: 5px;
+        }
+        
+        .patient-phone {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <div class="logo">
+                <h2>DOK75</h2>
+                <span>لوحة تحكم الطبيب</span>
+            </div>
+            
+            <div class="user-info" id="userInfo">
+                <div class="name">جاري التحميل...</div>
+                <div class="role">طبيب</div>
+            </div>
+            
+            <ul class="menu">
+                <li><a href="#" class="active" onclick="loadDashboard()">🏠 الرئيسية</a></li>
+                <li><a href="#" onclick="loadTodayAppointments()">📅 مواعيد اليوم</a></li>
+                <li><a href="#" onclick="loadMyPatients()">👥 مرضاي</a></li>
+                <li><a href="#" onclick="loadSchedule()">⏰ جدول العمل</a></li>
+                <li><a href="#" onclick="logout()">🚪 تسجيل الخروج</a></li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h1 id="pageTitle">الرئيسية</h1>
+            </div>
+            
+            <div id="content"></div>
+        </div>
+    </div>
+    
+    <script src="/js/main.js"></script>
+    <script>
+        if (!checkAuth()) {
+            window.location.href = '/login.html';
+        }
+        
+        let currentUser = null;
+        
+        async function loadUserData() {
+            try {
+                const data = await fetchWithLoading('/api/auth/me');
+                if (data.success) {
+                    currentUser = data.user;
+                    document.querySelector('.user-info .name').textContent = currentUser.full_name;
+                }
+            } catch (error) {
+                console.error('خطأ:', error);
+            }
+        }
+        
+        // تحميل مواعيد اليوم
+        async function loadTodayAppointments() {
+            document.getElementById('pageTitle').textContent = 'مواعيد اليوم';
+            
+            const today = new Date().toISOString().split('T')[0];
+            
+            try {
+                const data = await fetchWithLoading(`/api/appointments/doctor/${currentUser.id}?date=${today}`);
+                
+                let html = '<div class="schedule-card">';
+                
+                if (data.appointments?.length > 0) {
+                    data.appointments.forEach(app => {
+                        html += `
+                            <div class="time-slot">
+                                <div class="slot-time">
+                                    ${new Date(app.appointment_date).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                                <div class="patient-info">
+                                    <div class="patient-name">${app.patient?.full_name}</div>
+                                    <div class="patient-phone">📞 ${app.patient?.phone || 'لا يوجد'}</div>
+                                </div>
+                                <span class="badge badge-${app.status}">
+                                    ${app.status === 'pending' ? 'معلق' :
+                                      app.status === 'confirmed' ? 'مؤكد' :
+                                      app.status === 'completed' ? 'مكتمل' : 'ملغي'}
+                                </span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<p style="text-align: center; padding: 20px;">لا توجد مواعيد اليوم</p>';
+                }
+                
+                html += '</div>';
+                document.getElementById('content').innerHTML = html;
+            } catch (error) {
+                console.error('خطأ:', error);
+            }
+        }
+        
+        // تحميل مرضاي
+        async function loadMyPatients() {
+            document.getElementById('pageTitle').textContent = 'مرضاي';
+            
+            try {
+                const data = await fetchWithLoading('/api/patients');
+                
+                let html = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">قائمة مرضاي</h2>
+                            <button class="btn btn-primary" onclick="showAddPatient()">+ إضافة مريض</button>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>الاسم</th>
+                                        <th>الهاتف</th>
+                                        <th>العمر</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+                
+                if (data.patients) {
+                    data.patients.forEach(patient => {
+                        html += `
+                            <tr>
+                                <td>${patient.full_name}</td>
+                                <td>${patient.phone}</td>
+                                <td>${patient.age || '-'}</td>
+                                <td>
+                                    <button class="action-btn view-btn" onclick="viewPatient(${patient.id})">👁️ عرض</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+                
+                html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('content').innerHTML = html;
+            } catch (error) {
+                console.error('خطأ:', error);
+            }
+        }
+        
+        // عرض مريض
+        async function viewPatient(patientId) {
+            try {
+                const data = await fetchWithLoading(`/api/patients/${patientId}`);
+                
+                if (data.success) {
+                    const p = data.patient;
+                    alert(`
+                        الاسم: ${p.full_name}
+                        الهاتف: ${p.phone}
+                        العمر: ${p.age || 'غير محدد'}
+                        التاريخ الطبي: ${p.medical_history || 'لا يوجد'}
+                        الأدوية: ${p.medications || 'لا يوجد'}
+                    `);
+                }
+            } catch (error) {
+                alert('حدث خطأ');
+            }
+        }
+        
+        // إضافة مريض
+        async function showAddPatient() {
+            const full_name = prompt('أدخل اسم المريض:');
+            if (!full_name) return;
+            
+            const phone = prompt('أدخل رقم الهاتف:');
+            if (!phone) return;
+            
+            const age = prompt('أدخل العمر:');
+            
+            try {
+                const data = await fetchWithLoading('/api/patients', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        full_name, 
+                        phone, 
+                        age: age ? parseInt(age) : null,
+                        clinic_id: currentUser.clinic_id 
+                    })
+                });
+                
+                if (data.success) {
+                    alert('✅ تم إضافة المريض بنجاح');
+                    loadMyPatients();
+                }
+            } catch (error) {
+                alert('حدث خطأ');
+            }
+        }
+        
+        function loadDashboard() {
+            document.getElementById('pageTitle').textContent = 'الرئيسية';
+            loadTodayAppointments();
+        }
+        
+        function loadSchedule() {
+            document.getElementById('pageTitle').textContent = 'جدول العمل';
+            document.getElementById('content').innerHTML = '<p>جاري التحميل...</p>';
+        }
+        
+        loadUserData();
+        loadDashboard();
+    </script>
+</body>
+</html>
