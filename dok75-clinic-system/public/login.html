@@ -1,1 +1,293 @@
-// login.html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOK75 - دخول الأطباء</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, rgba(0,109,119,0.9) 0%, rgba(44,62,80,0.9) 100%), 
+                        url('/images/clinic-bg.jpg') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .login-card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 40px;
+            padding: 50px 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .logo {
+            margin-bottom: 20px;
+        }
+        
+        .logo h1 {
+            font-size: 60px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+        
+        .logo span {
+            display: block;
+            font-size: 18px;
+            color: #2C3E50;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+        
+        .badge {
+            background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-block;
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+            text-align: right;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2C3E50;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 16px;
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+        
+        .input-group input:focus {
+            border-color: #006D77;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(0,109,119,0.1);
+            outline: none;
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 20px;
+            font-weight: 700;
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+            box-shadow: 0 10px 20px rgba(0,109,119,0.3);
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(0,109,119,0.4);
+        }
+        
+        .btn-login:active {
+            transform: translateY(0);
+        }
+        
+        .features {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+            padding: 20px 0;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .feature-item {
+            text-align: center;
+        }
+        
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .feature-text {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .specialties {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .specialty-tag {
+            background: #f0f0f0;
+            color: #2C3E50;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            color: #666;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        
+        .footer .name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #006D77;
+            margin: 10px 0 5px;
+        }
+        
+        .footer .phone {
+            display: inline-block;
+            background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
+            color: white;
+            padding: 8px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-top: 10px;
+            direction: ltr;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo">
+            <h1>DOK75</h1>
+            <span>مركز التجميل والعيادات المتخصصة</span>
+        </div>
+        
+        <div class="badge">
+            ✨ نظام إدارة متكامل لـ 50+ دكتور
+        </div>
+        
+        <form id="loginForm">
+            <div class="input-group">
+                <label>👤 اسم المستخدم</label>
+                <input type="text" id="username" placeholder="أدخل اسم المستخدم" required>
+            </div>
+            
+            <div class="input-group">
+                <label>🔑 كلمة المرور</label>
+                <input type="password" id="password" placeholder="أدخل كلمة المرور" required>
+            </div>
+            
+            <button type="submit" class="btn-login">دخول</button>
+        </form>
+        
+        <div class="specialties">
+            <span class="specialty-tag">🦷 أسنان</span>
+            <span class="specialty-tag">🔬 ليزر</span>
+            <span class="specialty-tag">💆🏻 بشرة</span>
+            <span class="specialty-tag">🔪 تجميل</span>
+            <span class="specialty-tag">💇🏻 شعر</span>
+            <span class="specialty-tag">💊 عام</span>
+            <span class="specialty-tag">🧪 تحاليل</span>
+            <span class="specialty-tag">✨ علاج طبيعي</span>
+        </div>
+        
+        <div class="features">
+            <div class="feature-item">
+                <div class="feature-icon">👥</div>
+                <div class="feature-text">50+ دكتور</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🏥</div>
+                <div class="feature-text">8 تخصصات</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🔐</div>
+                <div class="feature-text">آمن جداً</div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div>التصميم والبرمجة</div>
+            <div class="name">المهندس عبدالرزاق</div>
+            <div class="phone">0995973668</div>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    if (data.user.role === 'super_admin') {
+                        window.location.href = '/admin-dashboard';
+                    } else if (data.user.role === 'doctor') {
+                        window.location.href = '/doctor-dashboard';
+                    } else {
+                        window.location.href = '/dashboard';
+                    }
+                } else {
+                    alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+                }
+            } catch (error) {
+                alert('حدث خطأ في الاتصال');
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>
