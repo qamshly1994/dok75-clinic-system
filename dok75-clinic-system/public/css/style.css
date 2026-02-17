@@ -1,11 +1,31 @@
 /**
  * ============================================
- * DOK75 - ملف الأنماط الرئيسي
+ * DOK75 - التصميم الرئيسي للنظام
+ * نسخة احترافية أنيقة
  * ============================================
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
 
+/* ========== المتغيرات الأساسية ========== */
+:root {
+    --primary: #006D77;
+    --primary-dark: #2C3E50;
+    --secondary: #E29578;
+    --success: #28a745;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --info: #17a2b8;
+    --light: #f8f9fa;
+    --dark: #343a40;
+    --white: #ffffff;
+    --shadow: 0 5px 20px rgba(0,0,0,0.1);
+    --shadow-hover: 0 10px 30px rgba(0,0,0,0.15);
+    --gradient: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    --gradient-hover: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+}
+
+/* ========== الإعدادات العامة ========== */
 * {
     margin: 0;
     padding: 0;
@@ -14,8 +34,8 @@
 
 body {
     font-family: 'Tajawal', sans-serif;
-    background-color: #f5f5f5;
-    color: #333;
+    background-color: #f0f2f5;
+    color: var(--dark);
     line-height: 1.6;
 }
 
@@ -24,43 +44,67 @@ body {
     display: inline-block;
     padding: 12px 24px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 16px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
     font-family: 'Tajawal', sans-serif;
     text-decoration: none;
+    text-align: center;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
-    color: white;
+    background: var(--gradient);
+    color: var(--white);
+    box-shadow: var(--shadow);
 }
 
 .btn-primary:hover {
+    background: var(--gradient-hover);
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,109,119,0.3);
+    box-shadow: var(--shadow-hover);
 }
 
 .btn-success {
-    background: #28a745;
-    color: white;
+    background: var(--success);
+    color: var(--white);
 }
 
 .btn-danger {
-    background: #dc3545;
-    color: white;
+    background: var(--danger);
+    color: var(--white);
 }
 
 .btn-warning {
-    background: #ffc107;
-    color: #333;
+    background: var(--warning);
+    color: var(--dark);
 }
 
 .btn-info {
-    background: #17a2b8;
-    color: white;
+    background: var(--info);
+    color: var(--white);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+}
+
+.btn-outline:hover {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.btn-lg {
+    padding: 16px 32px;
+    font-size: 18px;
 }
 
 /* ========== النماذج ========== */
@@ -72,23 +116,33 @@ body {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    color: #2C3E50;
+    color: var(--primary-dark);
+    font-size: 15px;
 }
 
 .form-control {
     width: 100%;
     padding: 12px 15px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
+    border: 2px solid #e1e5e9;
+    border-radius: 10px;
     font-size: 16px;
     font-family: 'Tajawal', sans-serif;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
+    background: var(--white);
 }
 
 .form-control:focus {
-    border-color: #006D77;
+    border-color: var(--primary);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0,109,119,0.1);
+    box-shadow: 0 0 0 4px rgba(0,109,119,0.1);
+}
+
+.form-control.error {
+    border-color: var(--danger);
+}
+
+.form-control.success {
+    border-color: var(--success);
 }
 
 select.form-control {
@@ -108,41 +162,51 @@ textarea.form-control {
 .table-container {
     overflow-x: auto;
     margin: 20px 0;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    border-radius: 15px;
+    box-shadow: var(--shadow);
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
+    background: var(--white);
 }
 
 th {
-    background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
-    color: white;
+    background: var(--gradient);
+    color: var(--white);
     padding: 15px;
     font-weight: 500;
     text-align: right;
+    font-size: 15px;
 }
 
 td {
     padding: 12px 15px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #edf2f7;
     text-align: right;
 }
 
 tr:hover {
-    background: #f8f9fa;
+    background: #f8fafc;
+}
+
+tr:last-child td {
+    border-bottom: none;
 }
 
 /* ========== البطاقات ========== */
 .card {
-    background: white;
-    border-radius: 15px;
-    padding: 20px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    background: var(--white);
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: var(--shadow);
+    margin-bottom: 25px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-hover);
 }
 
 .card-header {
@@ -150,82 +214,103 @@ tr:hover {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #006D77;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--primary);
 }
 
 .card-title {
     font-size: 20px;
     font-weight: 700;
-    color: #2C3E50;
+    color: var(--primary-dark);
+}
+
+.card-title i {
+    margin-left: 8px;
+    color: var(--primary);
 }
 
 /* ========== التنبيهات ========== */
 .alert {
-    padding: 15px;
-    border-radius: 8px;
+    padding: 15px 20px;
+    border-radius: 10px;
     margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .alert-success {
     background: #d4edda;
     color: #155724;
-    border: 1px solid #c3e6cb;
+    border-right: 4px solid var(--success);
 }
 
 .alert-danger {
     background: #f8d7da;
     color: #721c24;
-    border: 1px solid #f5c6cb;
+    border-right: 4px solid var(--danger);
 }
 
 .alert-warning {
     background: #fff3cd;
     color: #856404;
-    border: 1px solid #ffeeba;
+    border-right: 4px solid var(--warning);
 }
 
 .alert-info {
     background: #d1ecf1;
     color: #0c5460;
-    border: 1px solid #bee5eb;
+    border-right: 4px solid var(--info);
 }
 
-/* ========== الأيقونات والشارات ========== */
+/* ========== الشارات ========== */
 .badge {
     display: inline-block;
     padding: 5px 12px;
-    border-radius: 20px;
+    border-radius: 30px;
     font-size: 12px;
     font-weight: 600;
+    text-align: center;
 }
 
 .badge-primary {
-    background: #006D77;
-    color: white;
+    background: var(--primary);
+    color: var(--white);
 }
 
 .badge-success {
-    background: #28a745;
-    color: white;
+    background: var(--success);
+    color: var(--white);
 }
 
 .badge-warning {
-    background: #ffc107;
-    color: #333;
+    background: var(--warning);
+    color: var(--dark);
 }
 
 .badge-danger {
-    background: #dc3545;
-    color: white;
+    background: var(--danger);
+    color: var(--white);
 }
 
 .badge-info {
-    background: #17a2b8;
-    color: white;
+    background: var(--info);
+    color: var(--white);
 }
 
-/* ========== تحميل (Loading) ========== */
+/* ========== مؤشر التحميل ========== */
 .loading {
     display: flex;
     justify-content: center;
@@ -236,8 +321,8 @@ tr:hover {
 .spinner {
     width: 50px;
     height: 50px;
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #006D77;
+    border: 5px solid #e1e5e9;
+    border-top: 5px solid var(--primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -252,29 +337,36 @@ tr:hover {
     position: fixed;
     right: 0;
     top: 0;
-    width: 250px;
+    width: 280px;
     height: 100vh;
-    background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
-    color: white;
-    padding: 20px;
+    background: var(--gradient);
+    color: var(--white);
+    padding: 30px 20px;
     overflow-y: auto;
     z-index: 1000;
+    box-shadow: var(--shadow);
 }
 
 .sidebar .logo {
-    font-size: 28px;
-    font-weight: 900;
-    margin-bottom: 30px;
     text-align: center;
+    margin-bottom: 30px;
     padding-bottom: 20px;
     border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.sidebar .logo h2 {
+    font-size: 36px;
+    font-weight: 900;
+    margin: 0;
+    background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .sidebar .logo span {
     display: block;
     font-size: 14px;
-    font-weight: normal;
-    opacity: 0.8;
+    opacity: 0.9;
     margin-top: 5px;
 }
 
@@ -283,6 +375,19 @@ tr:hover {
     padding: 20px 0;
     border-bottom: 1px solid rgba(255,255,255,0.2);
     margin-bottom: 20px;
+}
+
+.sidebar .user-info .avatar {
+    width: 80px;
+    height: 80px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    border: 3px solid var(--white);
 }
 
 .sidebar .user-info .name {
@@ -294,6 +399,10 @@ tr:hover {
 .sidebar .user-info .role {
     font-size: 14px;
     opacity: 0.8;
+    padding: 4px 12px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 20px;
+    display: inline-block;
 }
 
 .sidebar .menu {
@@ -309,30 +418,32 @@ tr:hover {
 .sidebar .menu a {
     display: block;
     padding: 12px 15px;
-    color: white;
+    color: var(--white);
     text-decoration: none;
-    border-radius: 8px;
-    transition: all 0.3s;
+    border-radius: 10px;
+    transition: all 0.3s ease;
     font-size: 16px;
 }
 
 .sidebar .menu a:hover,
 .sidebar .menu a.active {
     background: rgba(255,255,255,0.2);
+    transform: translateX(-5px);
 }
 
 .sidebar .menu i {
     margin-left: 10px;
     width: 24px;
     display: inline-block;
+    font-size: 18px;
 }
 
 /* ========== المحتوى الرئيسي ========== */
 .main-content {
-    margin-right: 250px;
+    margin-right: 280px;
     padding: 30px;
     min-height: 100vh;
-    background: #f5f5f5;
+    background: #f0f2f5;
 }
 
 /* ========== الهيدر ========== */
@@ -341,62 +452,90 @@ tr:hover {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    background: var(--white);
+    padding: 20px 25px;
+    border-radius: 15px;
+    box-shadow: var(--shadow);
 }
 
 .header h1 {
     font-size: 24px;
-    color: #2C3E50;
+    color: var(--primary-dark);
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header h1 i {
+    color: var(--primary);
 }
 
 /* ========== شبكة الإحصائيات ========== */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
+    gap: 25px;
     margin-bottom: 30px;
 }
 
 .stat-card {
-    background: white;
-    border-radius: 15px;
+    background: var(--white);
+    border-radius: 20px;
     padding: 25px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    text-align: center;
-    transition: transform 0.3s;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 20px;
 }
 
 .stat-card:hover {
     transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
 }
 
-.stat-card .icon {
-    font-size: 40px;
-    margin-bottom: 15px;
+.stat-icon {
+    width: 70px;
+    height: 70px;
+    background: var(--gradient);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    color: var(--white);
 }
 
-.stat-card .value {
+.stat-content {
+    flex: 1;
+}
+
+.stat-value {
     font-size: 32px;
     font-weight: 700;
-    color: #2C3E50;
+    color: var(--primary-dark);
     margin-bottom: 5px;
 }
 
-.stat-card .label {
-    font-size: 16px;
-    color: #666;
+.stat-label {
+    font-size: 14px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* ========== المواعيد ========== */
+/* ========== عناصر المواعيد ========== */
 .appointment-item {
     display: flex;
     align-items: center;
     padding: 15px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #edf2f7;
+    transition: all 0.3s ease;
+}
+
+.appointment-item:hover {
+    background: #f8fafc;
 }
 
 .appointment-item:last-child {
@@ -404,14 +543,15 @@ tr:hover {
 }
 
 .appointment-time {
-    background: #f0f0f0;
+    background: var(--gradient);
+    color: var(--white);
     padding: 8px 15px;
-    border-radius: 20px;
+    border-radius: 30px;
     font-weight: 600;
-    color: #2C3E50;
     margin-left: 20px;
-    min-width: 100px;
+    min-width: 120px;
     text-align: center;
+    font-size: 14px;
 }
 
 .appointment-info {
@@ -420,60 +560,396 @@ tr:hover {
 
 .appointment-info h4 {
     margin: 0 0 5px;
-    color: #2C3E50;
+    color: var(--primary-dark);
+    font-size: 16px;
 }
 
 .appointment-info p {
     margin: 0;
-    color: #666;
+    color: #6c757d;
     font-size: 14px;
 }
 
+.appointment-info p i {
+    margin-left: 5px;
+    color: var(--primary);
+}
+
 /* ========== أزرار الإجراءات ========== */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .action-btn {
     padding: 6px 12px;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
     margin: 0 3px;
     font-family: 'Tajawal', sans-serif;
     font-size: 13px;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
 }
 
-.edit-btn {
-    background: #17a2b8;
-    color: white;
+.action-btn i {
+    font-size: 14px;
 }
 
-.edit-btn:hover {
+.view-btn {
+    background: var(--info);
+    color: var(--white);
+}
+
+.view-btn:hover {
     background: #138496;
 }
 
+.edit-btn {
+    background: var(--warning);
+    color: var(--dark);
+}
+
+.edit-btn:hover {
+    background: #e0a800;
+}
+
 .delete-btn {
-    background: #dc3545;
-    color: white;
+    background: var(--danger);
+    color: var(--white);
 }
 
 .delete-btn:hover {
     background: #c82333;
 }
 
-.view-btn {
-    background: #28a745;
-    color: white;
+.confirm-btn {
+    background: var(--success);
+    color: var(--white);
 }
 
-.view-btn:hover {
+.confirm-btn:hover {
     background: #218838;
 }
 
-/* ========== تنسيقات الجوال ========== */
+.cancel-btn {
+    background: #6c757d;
+    color: var(--white);
+}
+
+.cancel-btn:hover {
+    background: #5a6268;
+}
+
+/* ========== النوافذ المنبثقة (Modal) ========== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 2000;
+    overflow-y: auto;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: var(--white);
+    width: 90%;
+    max-width: 600px;
+    margin: 50px auto;
+    border-radius: 20px;
+    padding: 30px;
+    position: relative;
+    animation: modalSlideIn 0.3s ease;
+    box-shadow: var(--shadow-hover);
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-lg {
+    max-width: 800px;
+}
+
+.modal-sm {
+    max-width: 400px;
+}
+
+.close-modal {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #6c757d;
+    transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.close-modal:hover {
+    color: var(--danger);
+    background: #f8d7da;
+}
+
+/* ========== قوائم الأطباء والمرضى ========== */
+.doctors-list, .patients-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 2px solid #edf2f7;
+    border-radius: 10px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.doctor-item, .patient-item {
+    padding: 12px 15px;
+    margin: 5px 0;
+    background: #f8fafc;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.doctor-item:hover, .patient-item:hover {
+    background: var(--gradient);
+    color: var(--white);
+    transform: translateX(-5px);
+}
+
+.doctor-item.selected, .patient-item.selected {
+    background: var(--gradient);
+    color: var(--white);
+    border-left: 4px solid var(--warning);
+}
+
+.doctor-item i, .patient-item i {
+    font-size: 20px;
+}
+
+/* ========== بطاقات سريعة ========== */
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin: 30px 0;
+}
+
+.action-card {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 30px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+    border: 2px solid transparent;
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-hover);
+}
+
+.action-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: var(--primary);
+}
+
+.action-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 5px;
+}
+
+.action-desc {
+    font-size: 13px;
+    color: #6c757d;
+}
+
+/* ========== جلسات المريض ========== */
+.session-card {
+    background: #f8fafc;
+    border-radius: 15px;
+    padding: 20px;
+    margin: 15px 0;
+    border-right: 4px solid var(--primary);
+    transition: all 0.3s ease;
+}
+
+.session-card:hover {
+    background: var(--white);
+    box-shadow: var(--shadow);
+}
+
+.session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.session-date {
+    background: var(--gradient);
+    color: var(--white);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.session-doctor {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.session-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.detail-item {
+    background: var(--white);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.detail-label {
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.detail-value {
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+/* ========== صفحة تسجيل الدخول ========== */
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(0,109,119,0.95) 0%, rgba(44,62,80,0.95) 100%),
+                url('/images/clinic-bg.jpg') no-repeat center center fixed;
+    background-size: cover;
+    padding: 20px;
+}
+
+.login-card {
+    background: rgba(255,255,255,0.98);
+    backdrop-filter: blur(10px);
+    border-radius: 30px;
+    padding: 50px 40px;
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+    text-align: center;
+    animation: fadeInUp 0.5s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-logo {
+    margin-bottom: 30px;
+}
+
+.login-logo h1 {
+    font-size: 60px;
+    font-weight: 900;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 5px;
+}
+
+.login-logo span {
+    display: block;
+    font-size: 18px;
+    color: var(--primary-dark);
+    font-weight: 500;
+}
+
+.login-badge {
+    background: var(--gradient);
+    color: var(--white);
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-block;
+    margin-bottom: 30px;
+}
+
+.login-footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #edf2f7;
+    color: #6c757d;
+}
+
+.login-footer .name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 5px 0;
+}
+
+.login-footer .phone {
+    display: inline-block;
+    background: var(--gradient);
+    color: var(--white);
+    padding: 8px 25px;
+    border-radius: 50px;
+    font-weight: 600;
+    direction: ltr;
+    margin-top: 10px;
+}
+
+/* ========== تنسيقات متجاوبة ========== */
 @media (max-width: 768px) {
     .sidebar {
         width: 100%;
         height: auto;
         position: relative;
+        padding: 15px;
     }
     
     .main-content {
@@ -487,10 +963,24 @@ tr:hover {
     .appointment-item {
         flex-direction: column;
         text-align: center;
+        gap: 10px;
     }
     
     .appointment-time {
         margin-left: 0;
-        margin-bottom: 10px;
+        width: 100%;
+    }
+    
+    .quick-actions {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 20px auto;
+        padding: 20px;
     }
 }
+
+/* ========== أيقونات Font Awesome ========== */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
