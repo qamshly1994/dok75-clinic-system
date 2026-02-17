@@ -25,9 +25,17 @@ module.exports = (sequelize) => {
         },
         receptionist_id: {
             type: DataTypes.INTEGER,
-            allowNull: false,
+            allowNull: true,
             references: {
                 model: 'users',
+                key: 'id'
+            }
+        },
+        clinic_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'clinics',
                 key: 'id'
             }
         },
@@ -42,6 +50,14 @@ module.exports = (sequelize) => {
         notes: {
             type: DataTypes.TEXT,
             allowNull: true
+        },
+        created_by: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'users',
+                key: 'id'
+            }
         }
     });
 
