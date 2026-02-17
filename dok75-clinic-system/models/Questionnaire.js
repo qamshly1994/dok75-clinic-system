@@ -1,11 +1,3 @@
-/**
- * ============================================
- * نموذج الاستبيان (Questionnaire)
- * حسب تخصصات العيادة (تغذية - أسنان - ليزر - عام)
- * الموقع: /models/Questionnaire.js
- * ============================================
- */
-
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -17,92 +9,33 @@ module.exports = (sequelize) => {
         },
         patient_id: {
             type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'patients',
-                key: 'id'
-            }
+            allowNull: false
         },
         doctor_id: {
             type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'users',
-                key: 'id'
-            }
+            allowNull: false
         },
         department_id: {
             type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'departments',
-                key: 'id'
-            }
+            allowNull: true
         },
-        appointment_id: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            references: {
-                model: 'appointments',
-                key: 'id'
-            }
-        },
-        // استبيان التغذية (Nutrition)
+        // استبيان التغذية
         nutrition: {
             type: DataTypes.JSONB,
             allowNull: true,
-            defaultValue: {
-                meals_regular: null,      // هل تتناول الوجبات بانتظام؟
-                important_meal: null,     // أهم وجبة؟
-                food_source: null,        // مصدر الغذاء؟
-                fruits_veggies: null,     // خضار وفواكه؟
-                nutrition_study: null,    // علاقة التغذية بالتحصيل؟
-                breakfast_regular: null,  // إفطار منتظم؟
-                breakfast_time: null,     // وقت الإفطار؟
-                notes: ''                 // ملاحظات الطبيب
-            }
+            defaultValue: {}
         },
-        // استبيان الأسنان (Dentistry)
+        // استبيان الأسنان
         dentistry: {
             type: DataTypes.JSONB,
             allowNull: true,
-            defaultValue: {
-                brushing_frequency: null,   // عدد مرات تنظيف الأسنان؟
-                last_visit: null,            // آخر زيارة لطبيب الأسنان؟
-                gum_bleeding: null,          // نزيف اللثة؟
-                tooth_sensitivity: null,     // حساسية الأسنان؟
-                braces_history: null,        // تاريخ تقويم؟
-                smoking: null,                // تدخين؟
-                notes: ''
-            }
+            defaultValue: {}
         },
-        // استبيان الليزر (Laser)
+        // استبيان الليزر
         laser: {
             type: DataTypes.JSONB,
             allowNull: true,
-            defaultValue: {
-                skin_type: null,              // نوع البشرة؟
-                previous_laser: null,         // جلسات ليزر سابقة؟
-                hair_removal_area: null,      // منطقة إزالة الشعر؟
-                skin_sensitivity: null,       // حساسية الجلد؟
-                medications: null,             // أدوية حالية؟
-                pregnancy: null,               // حمل أو رضاعة؟
-                notes: ''
-            }
-        },
-        // استبيان الطب العام (General Medicine)
-        general: {
-            type: DataTypes.JSONB,
-            allowNull: true,
-            defaultValue: {
-                chronic_diseases: null,       // أمراض مزمنة؟
-                medications: null,             // أدوية مستمرة؟
-                allergies: null,                // حساسية؟
-                surgeries: null,                 // عمليات سابقة؟
-                family_history: null,           // تاريخ عائلي؟
-                smoking_alcohol: null,          // تدخين أو كحول؟
-                notes: ''
-            }
+            defaultValue: {}
         },
         created_at: {
             type: DataTypes.DATE,
