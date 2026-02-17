@@ -128,6 +128,94 @@
         .close-modal:hover {
             color: #dc3545;
         }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-completed {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 14px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,109,119,0.3);
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 3px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 13px;
+        }
+
+        .view-btn {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .edit-btn {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th {
+            background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
+            color: white;
+            padding: 12px;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -164,7 +252,6 @@
             </div>
             
             <div id="content">
-                <!-- المحتوى يتم تحميله ديناميكياً -->
                 <div class="loading">جاري التحميل...</div>
             </div>
         </div>
@@ -188,7 +275,6 @@
         let currentDepartment = null;
         let selectedPatient = null;
         
-        // التحقق من تسجيل الدخول
         if (!token) {
             window.location.href = '/login.html';
         }
@@ -243,35 +329,28 @@
         async function showDepartments() {
             document.getElementById('pageTitle').textContent = 'اختر القسم';
             
-            try {
-                const { response, data } = await apiRequest('/api/departments');
-                
-                let html = '<div class="departments-grid">';
-                
-                const departments = [
-                    { id: 1, name: 'طب عام', icon: '💊' },
-                    { id: 2, name: 'أسنان', icon: '🦷' },
-                    { id: 3, name: 'ليزر', icon: '🔬' },
-                    { id: 4, name: 'تجميل', icon: '💆🏻' },
-                    { id: 5, name: 'تغذية', icon: '🥗' },
-                    { id: 6, name: 'علاج طبيعي', icon: '✨' }
-                ];
-                
-                departments.forEach(dept => {
-                    html += `
-                        <div class="department-card" onclick="selectDepartment(${dept.id}, '${dept.name}', '${dept.icon}')">
-                            <div class="department-icon">${dept.icon}</div>
-                            <div class="department-name">${dept.name}</div>
-                        </div>
-                    `;
-                });
-                
-                html += '</div>';
-                document.getElementById('content').innerHTML = html;
-                
-            } catch (error) {
-                console.error('❌ خطأ:', error);
-            }
+            const departments = [
+                { id: 1, name: 'طب عام', icon: '💊' },
+                { id: 2, name: 'أسنان', icon: '🦷' },
+                { id: 3, name: 'ليزر', icon: '🔬' },
+                { id: 4, name: 'تغذية', icon: '🥗' },
+                { id: 5, name: 'تجميل', icon: '💆🏻' },
+                { id: 6, name: 'علاج طبيعي', icon: '✨' }
+            ];
+            
+            let html = '<div class="departments-grid">';
+            
+            departments.forEach(dept => {
+                html += `
+                    <div class="department-card" onclick="selectDepartment(${dept.id}, '${dept.name}', '${dept.icon}')">
+                        <div class="department-icon">${dept.icon}</div>
+                        <div class="department-name">${dept.name}</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            document.getElementById('content').innerHTML = html;
         }
         
         // ============================================
@@ -309,7 +388,6 @@
                                         <th>الاسم</th>
                                         <th>الهاتف</th>
                                         <th>العمر</th>
-                                        <th>آخر موعد</th>
                                         <th>الإجراءات</th>
                                     </tr>
                                 </thead>
@@ -318,20 +396,14 @@
                 
                 if (response.ok && data.patients && data.patients.length > 0) {
                     data.patients.forEach(patient => {
-                        const lastAppointment = patient.appointments && patient.appointments[0] 
-                            ? new Date(patient.appointments[0].appointment_date).toLocaleDateString('ar-SA')
-                            : 'لا يوجد';
-                        
                         html += `
                             <tr>
                                 <td><strong>${patient.full_name}</strong></td>
                                 <td>${patient.phone}</td>
                                 <td>${patient.age || '-'}</td>
-                                <td>${lastAppointment}</td>
                                 <td>
                                     <button class="action-btn view-btn" onclick="viewPatientDetails(${patient.id})">👁️ عرض</button>
                                     <button class="action-btn edit-btn" onclick="openQuestionnaire(${patient.id}, '${patient.full_name}')">📝 استبيان</button>
-                                    <button class="action-btn confirm-btn" onclick="addMedicalNote(${patient.id})">➕ ملاحظة</button>
                                 </td>
                             </tr>
                         `;
@@ -339,7 +411,7 @@
                 } else {
                     html += `
                         <tr>
-                            <td colspan="5" style="text-align: center; padding: 30px;">
+                            <td colspan="4" style="text-align: center; padding: 30px;">
                                 ✨ لا يوجد مرضى في هذا القسم
                             </td>
                         </tr>
@@ -356,12 +428,13 @@
                 document.getElementById('content').innerHTML = html;
                 
             } catch (error) {
-                console.error('❌ خطأ في تحميل المرضى:', error);
+                console.error('❌ خطأ:', error);
+                document.getElementById('content').innerHTML = '<p style="color:red;">حدث خطأ في تحميل المرضى</p>';
             }
         }
         
         // ============================================
-        // فتح نموذج الاستبيان
+        // فتح نموذج الاستبيان (محدث)
         // ============================================
         function openQuestionnaire(patientId, patientName) {
             selectedPatient = { id: patientId, name: patientName };
@@ -382,45 +455,45 @@
                         <div class="question-group">
                             <label class="question-label">1. هل تتناول الوجبات اليومية الثلاث بانتظام؟</label>
                             <div class="radio-group">
-                                <label class="radio-option"><input type="radio" name="meals_regular" value="دائما"> دائماً</label>
-                                <label class="radio-option"><input type="radio" name="meals_regular" value="غالبا"> غالباً</label>
-                                <label class="radio-option"><input type="radio" name="meals_regular" value="نادرا"> نادراً</label>
+                                <label><input type="radio" name="meals_regular" value="دائما" required> دائماً</label>
+                                <label><input type="radio" name="meals_regular" value="غالبا"> غالباً</label>
+                                <label><input type="radio" name="meals_regular" value="نادرا"> نادراً</label>
                             </div>
                         </div>
                         
                         <div class="question-group">
                             <label class="question-label">2. ما هي أهم وجبة من الوجبات الثلاث بالنسبة لك؟</label>
                             <div class="radio-group">
-                                <label class="radio-option"><input type="radio" name="important_meal" value="فطور"> فطور</label>
-                                <label class="radio-option"><input type="radio" name="important_meal" value="غداء"> غداء</label>
-                                <label class="radio-option"><input type="radio" name="important_meal" value="عشاء"> عشاء</label>
+                                <label><input type="radio" name="important_meal" value="فطور" required> فطور</label>
+                                <label><input type="radio" name="important_meal" value="غداء"> غداء</label>
+                                <label><input type="radio" name="important_meal" value="عشاء"> عشاء</label>
                             </div>
                         </div>
                         
                         <div class="question-group">
                             <label class="question-label">3. هل تتناول الخضار والفواكه يومياً؟</label>
                             <div class="radio-group">
-                                <label class="radio-option"><input type="radio" name="fruits_veggies" value="دائما"> دائماً</label>
-                                <label class="radio-option"><input type="radio" name="fruits_veggies" value="غالبا"> غالباً</label>
-                                <label class="radio-option"><input type="radio" name="fruits_veggies" value="نادرا"> نادراً</label>
+                                <label><input type="radio" name="fruits_veggies" value="دائما" required> دائماً</label>
+                                <label><input type="radio" name="fruits_veggies" value="غالبا"> غالباً</label>
+                                <label><input type="radio" name="fruits_veggies" value="نادرا"> نادراً</label>
                             </div>
                         </div>
                         
                         <div class="question-group">
                             <label class="question-label">4. هل تتناول وجبة الإفطار بانتظام؟</label>
                             <div class="radio-group">
-                                <label class="radio-option"><input type="radio" name="breakfast_regular" value="دائما"> دائماً</label>
-                                <label class="radio-option"><input type="radio" name="breakfast_regular" value="غالبا"> غالباً</label>
-                                <label class="radio-option"><input type="radio" name="breakfast_regular" value="نادرا"> نادراً</label>
+                                <label><input type="radio" name="breakfast_regular" value="دائما" required> دائماً</label>
+                                <label><input type="radio" name="breakfast_regular" value="غالبا"> غالباً</label>
+                                <label><input type="radio" name="breakfast_regular" value="نادرا"> نادراً</label>
                             </div>
                         </div>
                         
                         <div class="question-group">
                             <label class="question-label">5. وقت تناول الإفطار:</label>
                             <div class="radio-group">
-                                <label class="radio-option"><input type="radio" name="breakfast_time" value="قبل المدرسة"> قبل المدرسة</label>
-                                <label class="radio-option"><input type="radio" name="breakfast_time" value="في المدرسة"> في المدرسة</label>
-                                <label class="radio-option"><input type="radio" name="breakfast_time" value="وقت آخر"> وقت آخر</label>
+                                <label><input type="radio" name="breakfast_time" value="قبل المدرسة" required> قبل المدرسة</label>
+                                <label><input type="radio" name="breakfast_time" value="في المدرسة"> في المدرسة</label>
+                                <label><input type="radio" name="breakfast_time" value="وقت آخر"> وقت آخر</label>
                             </div>
                         </div>
                     </div>
@@ -436,27 +509,27 @@
                         <div class="question-group">
                             <label class="question-label">1. عدد مرات تنظيف الأسنان يومياً؟</label>
                             <div class="radio-group">
-                                <label class="radio-option"><input type="radio" name="brushing_frequency" value="مرة"> مرة</label>
-                                <label class="radio-option"><input type="radio" name="brushing_frequency" value="مرتين"> مرتين</label>
-                                <label class="radio-option"><input type="radio" name="brushing_frequency" value="ثلاث"> ثلاث</label>
+                                <label><input type="radio" name="brushing_frequency" value="مرة" required> مرة</label>
+                                <label><input type="radio" name="brushing_frequency" value="مرتين"> مرتين</label>
+                                <label><input type="radio" name="brushing_frequency" value="ثلاث"> ثلاث</label>
                             </div>
                         </div>
                         
                         <div class="question-group">
                             <label class="question-label">2. آخر زيارة لطبيب الأسنان؟</label>
                             <div class="radio-group">
-                                <label class="radio-option"><input type="radio" name="last_visit" value="أقل من 6 شهور"> أقل من 6 شهور</label>
-                                <label class="radio-option"><input type="radio" name="last_visit" value="سنة"> سنة</label>
-                                <label class="radio-option"><input type="radio" name="last_visit" value="أكثر من سنة"> أكثر من سنة</label>
+                                <label><input type="radio" name="last_visit" value="أقل من 6 شهور" required> أقل من 6 شهور</label>
+                                <label><input type="radio" name="last_visit" value="سنة"> سنة</label>
+                                <label><input type="radio" name="last_visit" value="أكثر من سنة"> أكثر من سنة</label>
                             </div>
                         </div>
                         
                         <div class="question-group">
                             <label class="question-label">3. هل تعاني من نزيف اللثة؟</label>
                             <div class="radio-group">
-                                <label class="radio-option"><input type="radio" name="gum_bleeding" value="نعم"> نعم</label>
-                                <label class="radio-option"><input type="radio" name="gum_bleeding" value="لا"> لا</label>
-                                <label class="radio-option"><input type="radio" name="gum_bleeding" value="أحيانا"> أحياناً</label>
+                                <label><input type="radio" name="gum_bleeding" value="نعم" required> نعم</label>
+                                <label><input type="radio" name="gum_bleeding" value="لا"> لا</label>
+                                <label><input type="radio" name="gum_bleeding" value="أحيانا"> أحياناً</label>
                             </div>
                         </div>
                     </div>
@@ -472,32 +545,32 @@
                         <div class="question-group">
                             <label class="question-label">1. نوع بشرتك؟</label>
                             <div class="radio-group">
-                                <label class="radio-option"><input type="radio" name="skin_type" value="دهنية"> دهنية</label>
-                                <label class="radio-option"><input type="radio" name="skin_type" value="جافة"> جافة</label>
-                                <label class="radio-option"><input type="radio" name="skin_type" value="مختلطة"> مختلطة</label>
+                                <label><input type="radio" name="skin_type" value="دهنية" required> دهنية</label>
+                                <label><input type="radio" name="skin_type" value="جافة"> جافة</label>
+                                <label><input type="radio" name="skin_type" value="مختلطة"> مختلطة</label>
                             </div>
                         </div>
                         
                         <div class="question-group">
                             <label class="question-label">2. هل أجريت جلسات ليزر سابقة؟</label>
                             <div class="radio-group">
-                                <label class="radio-option"><input type="radio" name="previous_laser" value="نعم"> نعم</label>
-                                <label class="radio-option"><input type="radio" name="previous_laser" value="لا"> لا</label>
+                                <label><input type="radio" name="previous_laser" value="نعم" required> نعم</label>
+                                <label><input type="radio" name="previous_laser" value="لا"> لا</label>
                             </div>
                         </div>
                         
                         <div class="question-group">
                             <label class="question-label">3. هل لديك حساسية جلدية؟</label>
                             <div class="radio-group">
-                                <label class="radio-option"><input type="radio" name="skin_sensitivity" value="نعم"> نعم</label>
-                                <label class="radio-option"><input type="radio" name="skin_sensitivity" value="لا"> لا</label>
+                                <label><input type="radio" name="skin_sensitivity" value="نعم" required> نعم</label>
+                                <label><input type="radio" name="skin_sensitivity" value="لا"> لا</label>
                             </div>
                         </div>
                     </div>
                 `;
             }
             
-            // ملاحظات الطبيب
+            // ملاحظات الطبيب (لجميع الأقسام)
             formHtml += `
                     <div class="form-section">
                         <h3>📝 ملاحظات الطبيب</h3>
@@ -508,6 +581,7 @@
                     
                     <div style="text-align: left; margin-top: 20px;">
                         <button type="submit" class="btn-primary" style="padding:12px 25px;">💾 حفظ الاستبيان</button>
+                        <button type="button" class="btn-primary" onclick="closeQuestionnaireModal()" style="background:#6c757d; margin-right:10px;">❌ إلغاء</button>
                     </div>
                 </form>
             `;
@@ -517,15 +591,20 @@
         }
         
         // ============================================
-        // إرسال الاستبيان
+        // إرسال الاستبيان (محدث)
         // ============================================
         async function submitQuestionnaire(event) {
             event.preventDefault();
             
             const formData = new FormData(event.target);
-            const data = {};
             
-            // تجميع البيانات حسب القسم
+            // بناء البيانات الأساسية
+            const data = {
+                patient_id: parseInt(formData.get('patient_id')),
+                department_id: parseInt(formData.get('department_id'))
+            };
+            
+            // إضافة البيانات حسب القسم
             if (currentDepartment.name === 'تغذية') {
                 data.nutrition = {
                     meals_regular: formData.get('meals_regular'),
@@ -535,14 +614,16 @@
                     breakfast_time: formData.get('breakfast_time'),
                     notes: formData.get('doctor_notes')
                 };
-            } else if (currentDepartment.name === 'أسنان') {
+            } 
+            else if (currentDepartment.name === 'أسنان') {
                 data.dentistry = {
                     brushing_frequency: formData.get('brushing_frequency'),
                     last_visit: formData.get('last_visit'),
                     gum_bleeding: formData.get('gum_bleeding'),
                     notes: formData.get('doctor_notes')
                 };
-            } else if (currentDepartment.name === 'ليزر') {
+            } 
+            else if (currentDepartment.name === 'ليزر') {
                 data.laser = {
                     skin_type: formData.get('skin_type'),
                     previous_laser: formData.get('previous_laser'),
@@ -551,24 +632,35 @@
                 };
             }
             
-            data.patient_id = parseInt(formData.get('patient_id'));
-            data.department_id = parseInt(formData.get('department_id'));
-            
             try {
-                const { response, data: result } = await apiRequest('/api/questionnaires', {
+                console.log('📤 إرسال الاستبيان:', data);
+                
+                const response = await fetch('/api/questionnaires', {
                     method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify(data)
                 });
+                
+                const result = await response.json();
+                console.log('📥 نتيجة الحفظ:', result);
                 
                 if (response.ok && result.success) {
                     alert('✅ تم حفظ الاستبيان بنجاح');
                     closeQuestionnaireModal();
+                    
+                    // تحديث قائمة المرضى إذا كنا في نفس القسم
+                    if (document.getElementById('pageTitle').textContent.includes(currentDepartment.name)) {
+                        loadDepartmentPatients();
+                    }
                 } else {
-                    alert('❌ خطأ: ' + (result.error || 'فشل الحفظ'));
+                    alert('❌ خطأ: ' + (result.error || 'فشل حفظ الاستبيان'));
                 }
             } catch (error) {
-                console.error('❌ خطأ:', error);
-                alert('❌ حدث خطأ في الاتصال');
+                console.error('❌ خطأ في الاتصال:', error);
+                alert('❌ حدث خطأ في الاتصال بالخادم');
             }
         }
         
@@ -589,105 +681,19 @@
                 if (response.ok && data.success) {
                     const p = data.patient;
                     
-                    // عرض الاستبيانات السابقة
+                    // جلب الاستبيانات السابقة
                     const { data: qData } = await apiRequest(`/api/questionnaires/patient/${patientId}`);
                     
-                    let questionnairesHtml = '';
+                    let message = `👤 الاسم: ${p.full_name}\n📞 الهاتف: ${p.phone}\n🎂 العمر: ${p.age || 'غير محدد'}`;
+                    
+                    if (p.medical_history) message += `\n📋 التاريخ الطبي: ${p.medical_history}`;
+                    if (p.medications) message += `\n💊 الأدوية: ${p.medications}`;
+                    
+                    alert(message);
+                    
                     if (qData.questionnaires && qData.questionnaires.length > 0) {
-                        questionnairesHtml = '<h3 style="margin:20px 0 10px;">📋 الاستبيانات السابقة</h3>';
-                        qData.questionnaires.forEach(q => {
-                            questionnairesHtml += `
-                                <div style="background:#f8f9fa; padding:15px; margin:10px 0; border-radius:5px;">
-                                    <p><strong>القسم:</strong> ${q.department?.name || 'غير محدد'}</p>
-                                    <p><strong>التاريخ:</strong> ${new Date(q.created_at).toLocaleString('ar-SA')}</p>
-                                    <p><strong>الطبيب:</strong} ${q.doctor?.full_name || 'غير محدد'}</p>
-                                    <button class="action-btn view-btn" onclick="viewQuestionnaire(${q.id})">عرض التفاصيل</button>
-                                </div>
-                            `;
-                        });
-                    }
-                    
-                    alert(`
-                        👤 الاسم: ${p.full_name}
-                        📞 الهاتف: ${p.phone}
-                        🎂 العمر: ${p.age || 'غير محدد'}
-                        📋 التاريخ الطبي: ${p.medical_history || 'لا يوجد'}
-                        💊 الأدوية: ${p.medications || 'لا يوجد'}
-                        ⚠️ الحساسية: ${p.allergies || 'لا يوجد'}
-                    `);
-                    
-                    if (qData.questionnaires?.length > 0) {
                         console.log('الاستبيانات السابقة:', qData.questionnaires);
                     }
-                }
-            } catch (error) {
-                console.error('❌ خطأ:', error);
-            }
-        }
-        
-        // ============================================
-        // عرض استبيان محدد
-        // ============================================
-        async function viewQuestionnaire(questionnaireId) {
-            try {
-                const { response, data } = await apiRequest(`/api/questionnaires/${questionnaireId}`);
-                
-                if (response.ok && data.success) {
-                    const q = data.questionnaire;
-                    let details = 'تفاصيل الاستبيان:\n\n';
-                    
-                    if (q.nutrition && Object.keys(q.nutrition).length > 0) {
-                        details += '🥗 التغذية:\n';
-                        for (const [key, value] of Object.entries(q.nutrition)) {
-                            if (value && key !== 'notes') {
-                                details += `- ${key}: ${value}\n`;
-                            }
-                        }
-                        if (q.nutrition.notes) details += `ملاحظات: ${q.nutrition.notes}\n`;
-                    }
-                    
-                    if (q.dentistry && Object.keys(q.dentistry).length > 0) {
-                        details += '\n🦷 الأسنان:\n';
-                        for (const [key, value] of Object.entries(q.dentistry)) {
-                            if (value && key !== 'notes') {
-                                details += `- ${key}: ${value}\n`;
-                            }
-                        }
-                        if (q.dentistry.notes) details += `ملاحظات: ${q.dentistry.notes}\n`;
-                    }
-                    
-                    if (q.laser && Object.keys(q.laser).length > 0) {
-                        details += '\n🔬 الليزر:\n';
-                        for (const [key, value] of Object.entries(q.laser)) {
-                            if (value && key !== 'notes') {
-                                details += `- ${key}: ${value}\n`;
-                            }
-                        }
-                        if (q.laser.notes) details += `ملاحظات: ${q.laser.notes}\n`;
-                    }
-                    
-                    alert(details);
-                }
-            } catch (error) {
-                console.error('❌ خطأ:', error);
-            }
-        }
-        
-        // ============================================
-        // إضافة ملاحظة طبية
-        // ============================================
-        async function addMedicalNote(patientId) {
-            const note = prompt('أدخل الملاحظة الطبية:');
-            if (!note) return;
-            
-            try {
-                const { response, data } = await apiRequest(`/api/patients/${patientId}/notes`, {
-                    method: 'POST',
-                    body: JSON.stringify({ note })
-                });
-                
-                if (response.ok && data.success) {
-                    alert('✅ تم إضافة الملاحظة');
                 }
             } catch (error) {
                 console.error('❌ خطأ:', error);
@@ -710,21 +716,17 @@
                 if (response.ok && data.appointments && data.appointments.length > 0) {
                     data.appointments.forEach(app => {
                         html += `
-                            <div class="appointment-item" style="display:flex; align-items:center; padding:15px; border-bottom:1px solid #eee;">
+                            <div style="display:flex; align-items:center; padding:15px; border-bottom:1px solid #eee;">
                                 <div style="background:#006D77; color:white; padding:8px 15px; border-radius:20px; margin-left:20px;">
                                     ${new Date(app.appointment_date).toLocaleTimeString('ar-SA')}
                                 </div>
                                 <div style="flex:1;">
-                                    <strong>${app.patient?.full_name}</strong>
-                                    <br>
+                                    <strong>${app.patient?.full_name}</strong><br>
                                     <small>📞 ${app.patient?.phone}</small>
                                 </div>
                                 <span class="status-badge status-${app.status}">
                                     ${app.status === 'pending' ? 'معلق' : app.status === 'confirmed' ? 'مؤكد' : app.status === 'completed' ? 'مكتمل' : 'ملغي'}
                                 </span>
-                                <div style="margin-right:15px;">
-                                    <button class="btn-questionnaire" onclick="openQuestionnaire(${app.patient?.id}, '${app.patient?.full_name}')">📝 استبيان</button>
-                                </div>
                             </div>
                         `;
                     });
@@ -737,6 +739,7 @@
                 
             } catch (error) {
                 console.error('❌ خطأ:', error);
+                document.getElementById('content').innerHTML = '<p style="color:red;">حدث خطأ في تحميل المواعيد</p>';
             }
         }
         
@@ -759,8 +762,7 @@
                                     ${new Date(app.appointment_date).toLocaleString('ar-SA')}
                                 </div>
                                 <div style="flex:1;">
-                                    <strong>${app.patient?.full_name}</strong>
-                                    <br>
+                                    <strong>${app.patient?.full_name}</strong><br>
                                     <small>👨‍⚕️ ${app.doctor?.full_name}</small>
                                 </div>
                                 <span class="status-badge status-${app.status}">
@@ -778,11 +780,12 @@
                 
             } catch (error) {
                 console.error('❌ خطأ:', error);
+                document.getElementById('content').innerHTML = '<p style="color:red;">حدث خطأ في تحميل المواعيد</p>';
             }
         }
         
         // ============================================
-        // تحميل مرضاي (دون اختيار قسم)
+        // تحميل مرضاي
         // ============================================
         async function loadMyPatients() {
             document.getElementById('pageTitle').textContent = 'مرضاي';
@@ -803,7 +806,6 @@
                                         <th>الاسم</th>
                                         <th>الهاتف</th>
                                         <th>العمر</th>
-                                        <th>تاريخ الإضافة</th>
                                         <th>الإجراءات</th>
                                     </tr>
                                 </thead>
@@ -817,22 +819,14 @@
                                 <td><strong>${patient.full_name}</strong></td>
                                 <td>${patient.phone}</td>
                                 <td>${patient.age || '-'}</td>
-                                <td>${new Date(patient.createdAt).toLocaleDateString('ar-SA')}</td>
                                 <td>
                                     <button class="action-btn view-btn" onclick="viewPatientDetails(${patient.id})">👁️ عرض</button>
-                                    <button class="action-btn edit-btn" onclick="openQuestionnaire(${patient.id}, '${patient.full_name}')">📝 استبيان</button>
                                 </td>
                             </tr>
                         `;
                     });
                 } else {
-                    html += `
-                        <tr>
-                            <td colspan="5" style="text-align: center; padding: 30px;">
-                                ✨ لا يوجد مرضى بعد
-                            </td>
-                        </tr>
-                    `;
+                    html += '<tr><td colspan="4" style="text-align:center; padding:30px;">✨ لا يوجد مرضى</td></tr>';
                 }
                 
                 html += `
@@ -846,6 +840,7 @@
                 
             } catch (error) {
                 console.error('❌ خطأ:', error);
+                document.getElementById('content').innerHTML = '<p style="color:red;">حدث خطأ في تحميل المرضى</p>';
             }
         }
         
@@ -873,7 +868,9 @@
             }
         }
         
+        // ============================================
         // بدء التشغيل
+        // ============================================
         (async function init() {
             await loadUserData();
             showDepartments();
