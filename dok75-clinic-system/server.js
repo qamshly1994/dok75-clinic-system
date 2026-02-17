@@ -1,219 +1,62 @@
-/**
- * ============================================
- * DOK75 - نظام إدارة العيادات المتعددة
- * الملف الرئيسي للتطبيق (نسخة العيادة الواحدة)
- * ============================================
- */
-
-// استيراد المكتبات الأساسية
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
-const morgan = require('morgan');
 const path = require('path');
-const rateLimit = require('express-rate-limit');
-const fs = require('fs');
-
-// تحميل متغيرات البيئة
-dotenv.config();
-
-// استيراد الاتصال بقاعدة البيانات
 const { sequelize } = require('./models');
-
-// استيراد دالة Auto Seed
 const seedAdmin = require('./scripts/seed');
 
-// استيراد المسارات (Routes)
+dotenv.config();
+
+// استيراد المسارات
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
-const clinicRoutes = require('./routes/clinics');
-const departmentRoutes = require('./routes/departments');
-const specializationRoutes = require('./routes/specializations');
 const patientRoutes = require('./routes/patients');
 const appointmentRoutes = require('./routes/appointments');
-const treatmentRoutes = require('./routes/treatments');
-const questionnaireRoutes = require('./routes/questionnaires'); // ← جديد
+const questionnaireRoutes = require('./routes/questionnaires');
 
-// استيراد وسيط العيادة الواحدة (جديد)
-const { ensureSingleClinic, enforceSingleClinic } = require('./middleware/singleClinic');
-
-// إنشاء تطبيق Express
 const app = express();
 
-// ============================================
-// إعدادات الأمان والوسائط (Middleware)
-// ============================================
-
-// حماية الرؤوس (Helmet)
-app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false
-}));
-
-// تمكين CORS للاتصالات الخارجية
-app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
-    credentials: true
-}));
-
-// تسجيل الطلبات (Logging)
-app.use(morgan('combined'));
-
-// تحديد عدد الطلبات المسموحة (Rate Limiting)
-const limiter = rateLimit({
-    windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000,
-    max: process.env.RATE_LIMIT_MAX || 100,
-    message: { 
-        error: '⚠️ عدد كبير جداً من الطلبات، الرجاء المحاولة بعد 15 دقيقة' 
-    }
-});
-app.use('/api/', limiter);
-
-// معالجة البيانات (Body Parser)
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// خدمة الملفات الثابتة (Static Files)
+// Middleware
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({ origin: '*', credentials: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ============================================
-// وسيط العيادة الواحدة (جديد)
-// ============================================
-app.use(ensureSingleClinic);
-app.use(enforceSingleClinic);
-
-// ============================================
-// تسجيل المسارات (Routes)
-// ============================================
-
-// مسارات API
+// المسارات
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/clinics', clinicRoutes);
-app.use('/api/departments', departmentRoutes);
-app.use('/api/specializations', specializationRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
-app.use('/api/treatments', treatmentRoutes);
-app.use('/api/questionnaires', questionnaireRoutes); // ← جديد
+app.use('/api/questionnaires', questionnaireRoutes);
 
-// ============================================
-// المسارات العامة (Frontend)
-// ============================================
+// الصفحات
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+app.get('/admin-dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html')));
+app.get('/doctor-dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'doctor-dashboard.html')));
+app.get('/reception-dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reception-dashboard.html')));
 
-// الصفحة الرئيسية - توجيه لصفحة تسجيل الدخول
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
-// صفحة لوحة التحكم (توجيه حسب الدور)
-app.get('/dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-});
-
-app.get('/admin-dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
-});
-
-app.get('/doctor-dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'doctor-dashboard.html'));
-});
-
-app.get('/reception-dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'reception-dashboard.html')); // ← جديد
-});
-
-// ============================================
-// مسار التحقق من صحة الخادم
-// ============================================
-
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: '✅ نظام DOK75 شغال',
-        time: new Date().toLocaleString('ar-SA'),
-        developer: process.env.DEV_NAME,
-        phone: process.env.DEV_PHONE,
-        version: '2.1.0'
-    });
-});
-
-// ============================================
-// معالجة الأخطاء
-// ============================================
-
-// مسار 404 - غير موجود
-app.use('*', (req, res) => {
-    res.status(404).json({ 
-        error: '❌ المسار غير موجود',
-        message: 'تأكد من صحة الرابط' 
-    });
-});
-
-// معالجة أخطاء الخادم (500)
-app.use((err, req, res, next) => {
-    console.error('❌ خطأ في الخادم:', err);
-    res.status(500).json({ 
-        error: 'حدث خطأ في الخادم',
-        message: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-});
-
-// ============================================
-// تشغيل الخادم والاتصال بقاعدة البيانات
-// ============================================
-
+// تشغيل الخادم
 const PORT = process.env.PORT || 3000;
 
-// إنشاء مجلد logs إذا لم يكن موجوداً
-const logsDir = path.join(__dirname, 'logs');
-if (!fs.existsSync(logsDir)) {
-    fs.mkdirSync(logsDir, { recursive: true });
+async function startServer() {
+    try {
+        await sequelize.authenticate();
+        console.log('✅ اتصال قاعدة البيانات');
+
+        await sequelize.sync({ alter: true });
+        console.log('✅ مزامنة النماذج');
+
+        await seedAdmin();
+        console.log('✅ التحقق من المشرف');
+
+        app.listen(PORT, () => {
+            console.log(`🚀 الخادم شغال على المنفذ ${PORT}`);
+        });
+    } catch (error) {
+        console.error('❌ فشل التشغيل:', error);
+    }
 }
 
-// اختبار الاتصال بقاعدة البيانات
-const startServer = async () => {
-    try {
-        // التحقق من الاتصال
-        await sequelize.authenticate();
-        console.log('✅ تم الاتصال بقاعدة البيانات PostgreSQL بنجاح');
-
-        // مزامنة النماذج (إنشاء الجداول إذا لم تكن موجودة)
-        await sequelize.sync({ alter: true });
-        console.log('✅ تم مزامنة النماذج مع قاعدة البيانات');
-
-        // ✅ تشغيل Auto Seed Admin
-        await seedAdmin();
-        console.log('✅ تم التحقق من وجود المشرف العام');
-
-        // تشغيل الخادم
-        app.listen(PORT, () => {
-            console.log('=================================');
-            console.log(`🚀 خادم DOK75 شغال على المنفذ ${PORT}`);
-            console.log(`📱 افتح المتصفح: http://localhost:${PORT}`);
-            console.log(`👤 المطور: ${process.env.DEV_NAME}`);
-            console.log(`📞 للتواصل: ${process.env.DEV_PHONE}`);
-            console.log('=================================');
-        });
-
-    } catch (error) {
-        console.error('❌ فشل الاتصال بقاعدة البيانات:', error);
-        process.exit(1);
-    }
-};
-
-// تشغيل التطبيق
 startServer();
-
-// إغلاق الاتصال عند إيقاف التطبيق
-process.on('SIGINT', async () => {
-    await sequelize.close();
-    console.log('📴 تم إغلاق الاتصال بقاعدة البيانات');
-    process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-    await sequelize.close();
-    console.log('📴 تم إغلاق الاتصال بقاعدة البيانات');
-    process.exit(0);
-});
