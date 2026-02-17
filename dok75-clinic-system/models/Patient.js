@@ -1,9 +1,3 @@
-/**
- * ============================================
- * نموذج المريض (Patient)
- * ============================================
- */
-
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -13,30 +7,18 @@ module.exports = (sequelize) => {
             primaryKey: true,
             autoIncrement: true
         },
+        patient_number: {
+            type: DataTypes.STRING(20),
+            unique: true,
+            allowNull: false
+        },
         full_name: {
             type: DataTypes.STRING(100),
-            allowNull: false,
-            validate: {
-                notEmpty: { msg: 'اسم المريض مطلوب' }
-            }
+            allowNull: false
         },
         phone: {
             type: DataTypes.STRING(20),
-            allowNull: false,
-            validate: {
-                notEmpty: { msg: 'رقم الهاتف مطلوب' }
-            }
-        },
-        alternate_phone: {
-            type: DataTypes.STRING(20),
-            allowNull: true
-        },
-        email: {
-            type: DataTypes.STRING(100),
-            allowNull: true,
-            validate: {
-                isEmail: { msg: 'البريد الإلكتروني غير صحيح' }
-            }
+            allowNull: false
         },
         age: {
             type: DataTypes.INTEGER,
@@ -50,25 +32,17 @@ module.exports = (sequelize) => {
             type: DataTypes.TEXT,
             allowNull: true
         },
+        // الملف الطبي الموحد (يتجمع فيه كل شيء)
         medical_history: {
             type: DataTypes.TEXT,
-            allowNull: true
+            allowNull: true,
+            defaultValue: ''
         },
-        medications: {
-            type: DataTypes.TEXT,
-            allowNull: true
-        },
-        allergies: {
-            type: DataTypes.TEXT,
-            allowNull: true
-        },
-        clinic_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'clinics',
-                key: 'id'
-            }
+        // روابط المستندات والصور
+        documents: {
+            type: DataTypes.JSONB,
+            allowNull: true,
+            defaultValue: []
         },
         created_by: {
             type: DataTypes.INTEGER,
@@ -77,6 +51,10 @@ module.exports = (sequelize) => {
                 model: 'users',
                 key: 'id'
             }
+        },
+        clinic_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false
         },
         is_active: {
             type: DataTypes.BOOLEAN,
