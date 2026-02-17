@@ -1,9 +1,3 @@
-/**
- * ============================================
- * نموذج العيادة (Clinic)
- * ============================================
- */
-
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -15,10 +9,7 @@ module.exports = (sequelize) => {
         },
         name: {
             type: DataTypes.STRING(100),
-            allowNull: false,
-            validate: {
-                notEmpty: { msg: 'اسم العيادة مطلوب' }
-            }
+            allowNull: false
         },
         address: {
             type: DataTypes.TEXT,
@@ -30,10 +21,7 @@ module.exports = (sequelize) => {
         },
         email: {
             type: DataTypes.STRING(100),
-            allowNull: true,
-            validate: {
-                isEmail: { msg: 'البريد الإلكتروني غير صحيح' }
-            }
+            allowNull: true
         },
         logo: {
             type: DataTypes.STRING(255),
