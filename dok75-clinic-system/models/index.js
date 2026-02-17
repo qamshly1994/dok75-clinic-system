@@ -1,6 +1,7 @@
 /**
  * ============================================
  * ملف الربط الرئيسي للنماذج
+ * الموقع: /models/index.js
  * ============================================
  */
 
@@ -14,6 +15,7 @@ const User = require('./User')(sequelize);
 const Patient = require('./Patient')(sequelize);
 const Appointment = require('./Appointment')(sequelize);
 const Treatment = require('./Treatment')(sequelize);
+const Questionnaire = require('./Questionnaire')(sequelize); // ← جديد
 
 // ============================================
 // تعريف العلاقات بين الجداول
@@ -83,7 +85,30 @@ Treatment.belongsTo(Department, { as: 'department', foreignKey: 'department_id' 
 Specialization.hasMany(Treatment, { as: 'treatments', foreignKey: 'specialization_id' });
 Treatment.belongsTo(Specialization, { as: 'specialization', foreignKey: 'specialization_id' });
 
+// ============================================
+// العلاقات مع Questionnaire (جديد)
+// ============================================
+
+// Patient -> Questionnaire
+Patient.hasMany(Questionnaire, { as: 'questionnaires', foreignKey: 'patient_id' });
+Questionnaire.belongsTo(Patient, { as: 'patient', foreignKey: 'patient_id' });
+
+// User (doctor) -> Questionnaire
+User.hasMany(Questionnaire, { as: 'doctor_questionnaires', foreignKey: 'doctor_id' });
+Questionnaire.belongsTo(User, { as: 'doctor', foreignKey: 'doctor_id' });
+
+// Department -> Questionnaire
+Department.hasMany(Questionnaire, { as: 'questionnaires', foreignKey: 'department_id' });
+Questionnaire.belongsTo(Department, { as: 'department', foreignKey: 'department_id' });
+
+// Appointment -> Questionnaire (واحد لواحد)
+Appointment.hasOne(Questionnaire, { as: 'questionnaire', foreignKey: 'appointment_id' });
+Questionnaire.belongsTo(Appointment, { as: 'appointment', foreignKey: 'appointment_id' });
+
+// ============================================
 // تصدير جميع النماذج والاتصال
+// ============================================
+
 module.exports = {
     sequelize,
     Clinic,
@@ -92,5 +117,6 @@ module.exports = {
     User,
     Patient,
     Appointment,
-    Treatment
+    Treatment,
+    Questionnaire // ← جديد
 };
