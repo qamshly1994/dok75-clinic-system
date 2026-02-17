@@ -1,29 +1,15 @@
-/**
- * ============================================
- * وحدة تحكم العيادات (Clinic Controller)
- * ============================================
- */
+const { Clinic, User, Patient, Appointment } = require('../models');
 
-const { Clinic, Department, User } = require('../models');
-
-// ✅ إنشاء عيادة جديدة
+// إنشاء عيادة جديدة
 const createClinic = async (req, res) => {
     try {
-        const { name, address, phone, email, logo, description } = req.body;
+        const { name, address, phone, email, description } = req.body;
 
-        // التحقق من وجود العيادة
-        const existingClinic = await Clinic.findOne({ where: { name } });
-        if (existingClinic) {
-            return res.status(400).json({ error: 'اسم العيادة موجود بالفعل' });
-        }
-
-        // إنشاء العيادة
         const clinic = await Clinic.create({
             name,
             address,
             phone,
             email,
-            logo,
             description,
             is_active: true
         });
@@ -40,49 +26,28 @@ const createClinic = async (req, res) => {
     }
 };
 
-// ✅ عرض جميع العيادات
+// عرض جميع العيادات
 const getAllClinics = async (req, res) => {
     try {
         const clinics = await Clinic.findAll({
-            include: [
-                { 
-                    model: Department, 
-                    as: 'departments',
-                    where: { is_active: true },
-                    required: false
-                }
-            ],
             order: [['name', 'ASC']]
         });
 
-        res.json({
-            success: true,
-            count: clinics.length,
-            clinics
-        });
+        res.json({ success: true, count: clinics.length, clinics });
     } catch (error) {
-        console.error('❌ خطأ في جلب العيادات:', error);
+        console.error('❌ خطأ:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
 
-// ✅ عرض عيادة محددة
+// عرض عيادة محددة
 const getClinicById = async (req, res) => {
     try {
         const clinic = await Clinic.findByPk(req.params.id, {
             include: [
-                { 
-                    model: Department, 
-                    as: 'departments',
-                    include: ['specializations']
-                },
-                { 
-                    model: User, 
-                    as: 'doctors',
-                    where: { role: 'doctor', is_active: true },
-                    required: false,
-                    attributes: { exclude: ['password'] }
-                }
+                { model: User, as: 'doctors', where: { role: 'doctor' }, required: false },
+                { model: Patient, limit: 10 },
+                { model: Appointment, limit: 10 }
             ]
         });
 
@@ -90,148 +55,58 @@ const getClinicById = async (req, res) => {
             return res.status(404).json({ error: 'العيادة غير موجودة' });
         }
 
-        res.json({ 
-            success: true, 
-            clinic 
-        });
+        res.json({ success: true, clinic });
     } catch (error) {
-        console.error('❌ خطأ في جلب العيادة:', error);
+        console.error('❌ خطأ:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
 
-// ✅ تحديث بيانات عيادة
+// تحديث بيانات عيادة
 const updateClinic = async (req, res) => {
     try {
         const clinic = await Clinic.findByPk(req.params.id);
-
         if (!clinic) {
             return res.status(404).json({ error: 'العيادة غير موجودة' });
         }
 
-        const { name, address, phone, email, logo, description } = req.body;
+        const { name, address, phone, email, description } = req.body;
 
         await clinic.update({
             name: name || clinic.name,
             address: address || clinic.address,
             phone: phone || clinic.phone,
             email: email || clinic.email,
-            logo: logo || clinic.logo,
             description: description || clinic.description
         });
 
-        res.json({
-            success: true,
-            message: 'تم تحديث بيانات العيادة بنجاح',
-            clinic
-        });
+        res.json({ success: true, message: 'تم تحديث العيادة', clinic });
     } catch (error) {
-        console.error('❌ خطأ في تحديث العيادة:', error);
+        console.error('❌ خطأ:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
 
-// ✅ حذف عيادة
+// حذف عيادة
 const deleteClinic = async (req, res) => {
     try {
         const clinic = await Clinic.findByPk(req.params.id);
-
         if (!clinic) {
             return res.status(404).json({ error: 'العيادة غير موجودة' });
         }
 
-        // التحقق من عدم وجود أقسام تابعة
-        const departmentsCount = await Department.count({ where: { clinic_id: clinic.id } });
-        if (departmentsCount > 0) {
-            return res.status(400).json({ 
-                error: 'لا يمكن حذف العيادة لأنها تحتوي على أقسام',
-                departmentsCount
+        const doctorsCount = await User.count({ where: { clinic_id: clinic.id } });
+        if (doctorsCount > 0) {
+            return res.status(400).json({
+                error: 'لا يمكن حذف العيادة لأنها تحتوي على أطباء',
+                doctorsCount
             });
         }
 
         await clinic.destroy();
-
-        res.json({ 
-            success: true, 
-            message: 'تم حذف العيادة بنجاح' 
-        });
+        res.json({ success: true, message: 'تم حذف العيادة' });
     } catch (error) {
-        console.error('❌ خطأ في حذف العيادة:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// ✅ تغيير حالة العيادة
-const toggleClinicStatus = async (req, res) => {
-    try {
-        const clinic = await Clinic.findByPk(req.params.id);
-
-        if (!clinic) {
-            return res.status(404).json({ error: 'العيادة غير موجودة' });
-        }
-
-        await clinic.update({ is_active: !clinic.is_active });
-
-        res.json({
-            success: true,
-            message: clinic.is_active ? 'تم تفعيل العيادة' : 'تم تعطيل العيادة',
-            is_active: clinic.is_active
-        });
-    } catch (error) {
-        console.error('❌ خطأ في تغيير حالة العيادة:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// ✅ عرض أقسام عيادة محددة
-const getClinicDepartments = async (req, res) => {
-    try {
-        const clinic = await Clinic.findByPk(req.params.id);
-
-        if (!clinic) {
-            return res.status(404).json({ error: 'العيادة غير موجودة' });
-        }
-
-        const departments = await Department.findAll({
-            where: { clinic_id: clinic.id, is_active: true },
-            include: ['specializations'],
-            order: [['name', 'ASC']]
-        });
-
-        res.json({
-            success: true,
-            count: departments.length,
-            departments
-        });
-    } catch (error) {
-        console.error('❌ خطأ في جلب الأقسام:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// ✅ عرض أطباء عيادة محددة
-const getClinicDoctors = async (req, res) => {
-    try {
-        const clinic = await Clinic.findByPk(req.params.id);
-
-        if (!clinic) {
-            return res.status(404).json({ error: 'العيادة غير موجودة' });
-        }
-
-        const doctors = await User.findAll({
-            where: { clinic_id: clinic.id, role: 'doctor', is_active: true },
-            attributes: { exclude: ['password'] },
-            include: ['department', 'specialization'],
-            order: [['full_name', 'ASC']]
-        });
-
-        res.json({
-            success: true,
-            count: doctors.length,
-            doctors
-        });
-    } catch (error) {
-        console.error('❌ خطأ في جلب الأطباء:', error);
+        console.error('❌ خطأ:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
@@ -241,8 +116,5 @@ module.exports = {
     getAllClinics,
     getClinicById,
     updateClinic,
-    deleteClinic,
-    toggleClinicStatus,
-    getClinicDepartments,
-    getClinicDoctors
+    deleteClinic
 };
