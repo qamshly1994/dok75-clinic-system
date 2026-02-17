@@ -1,9 +1,3 @@
-/**
- * ============================================
- * نموذج المستخدم (User)
- * ============================================
- */
-
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
@@ -17,27 +11,18 @@ module.exports = (sequelize) => {
         username: {
             type: DataTypes.STRING(50),
             allowNull: false,
-            unique: true,
-            validate: {
-                notEmpty: { msg: 'اسم المستخدم مطلوب' }
-            }
+            unique: true
         },
         password: {
             type: DataTypes.STRING(255),
-            allowNull: false,
-            validate: {
-                notEmpty: { msg: 'كلمة المرور مطلوبة' }
-            }
+            allowNull: false
         },
         full_name: {
             type: DataTypes.STRING(100),
-            allowNull: false,
-            validate: {
-                notEmpty: { msg: 'الاسم الكامل مطلوب' }
-            }
+            allowNull: false
         },
         role: {
-            type: DataTypes.ENUM('super_admin', 'doctor', 'receptionist'),
+            type: DataTypes.ENUM('admin', 'doctor', 'receptionist'),
             defaultValue: 'doctor',
             allowNull: false
         },
@@ -49,32 +34,17 @@ module.exports = (sequelize) => {
                 key: 'id'
             }
         },
-        department_id: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            references: {
-                model: 'departments',
-                key: 'id'
-            }
-        },
-        specialization_id: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            references: {
-                model: 'specializations',
-                key: 'id'
-            }
-        },
         phone: {
             type: DataTypes.STRING(20),
             allowNull: true
         },
         email: {
             type: DataTypes.STRING(100),
-            allowNull: true,
-            validate: {
-                isEmail: { msg: 'البريد الإلكتروني غير صحيح' }
-            }
+            allowNull: true
+        },
+        specialization: {
+            type: DataTypes.STRING(100),
+            allowNull: true
         },
         is_active: {
             type: DataTypes.BOOLEAN,
@@ -86,28 +56,25 @@ module.exports = (sequelize) => {
         }
     }, {
         hooks: {
-            // تشفير كلمة المرور قبل الحفظ
             beforeCreate: async (user) => {
                 if (user.password) {
-                    const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS) || 10);
+                    const salt = await bcrypt.genSalt(10);
                     user.password = await bcrypt.hash(user.password, salt);
                 }
             },
             beforeUpdate: async (user) => {
                 if (user.changed('password')) {
-                    const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS) || 10);
+                    const salt = await bcrypt.genSalt(10);
                     user.password = await bcrypt.hash(user.password, salt);
                 }
             }
         }
     });
 
-    // دالة مقارنة كلمة المرور
     User.prototype.comparePassword = async function(candidatePassword) {
         return await bcrypt.compare(candidatePassword, this.password);
     };
 
-    // دالة إرجاع البيانات بدون كلمة المرور
     User.prototype.toJSON = function() {
         const values = Object.assign({}, this.get());
         delete values.password;
