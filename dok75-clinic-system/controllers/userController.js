@@ -1,50 +1,35 @@
 const { User, Clinic } = require('../models');
-const bcrypt = require('bcryptjs');
 
-// إنشاء مستخدم جديد (دكتور أو موظف)
+// إنشاء مستخدم جديد
 const createUser = async (req, res) => {
     try {
-        const { username, password, full_name, role, phone, email } = req.body;
+        const { username, password, full_name, role, clinic_id, phone, email, specialization } = req.body;
 
-        // التحقق من وجود اسم المستخدم
         const existingUser = await User.findOne({ where: { username } });
         if (existingUser) {
             return res.status(400).json({ error: 'اسم المستخدم موجود بالفعل' });
         }
 
-        // العيادة الافتراضية (عيادة واحدة)
-        const clinic = await Clinic.findOne();
-        const clinic_id = clinic ? clinic.id : 1;
-
-        // تشفير كلمة المرور
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // إنشاء المستخدم
         const user = await User.create({
             username,
-            password: hashedPassword,
+            password,
             full_name,
             role,
             clinic_id,
             phone,
             email,
+            specialization,
             is_active: true
         });
 
         res.status(201).json({
             success: true,
             message: 'تم إنشاء المستخدم بنجاح',
-            user: {
-                id: user.id,
-                username: user.username,
-                full_name: user.full_name,
-                role: user.role
-            }
+            user: user.toJSON()
         });
 
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في إنشاء المستخدم:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
@@ -58,10 +43,61 @@ const getAllUsers = async (req, res) => {
             order: [['createdAt', 'DESC']]
         });
 
+        res.json({ success: true, count: users.length, users });
+    } catch (error) {
+        console.error('❌ خطأ:', error);
+        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+    }
+};
+
+// عرض مستخدم محدد
+const getUserById = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id, {
+            attributes: { exclude: ['password'] },
+            include: [{ model: Clinic }]
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'المستخدم غير موجود' });
+        }
+
+        res.json({ success: true, user });
+    } catch (error) {
+        console.error('❌ خطأ:', error);
+        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+    }
+};
+
+// تحديث بيانات مستخدم
+const updateUser = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: 'المستخدم غير موجود' });
+        }
+
+        const { full_name, role, clinic_id, phone, email, specialization, password } = req.body;
+
+        const updateData = {
+            full_name: full_name || user.full_name,
+            role: role || user.role,
+            clinic_id: clinic_id !== undefined ? clinic_id : user.clinic_id,
+            phone: phone || user.phone,
+            email: email || user.email,
+            specialization: specialization || user.specialization
+        };
+
+        if (password) {
+            updateData.password = password;
+        }
+
+        await user.update(updateData);
+
         res.json({
             success: true,
-            count: users.length,
-            users
+            message: 'تم تحديث البيانات بنجاح',
+            user: user.toJSON()
         });
     } catch (error) {
         console.error('❌ خطأ:', error);
@@ -69,25 +105,23 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-// تحديث حالة المستخدم (تفعيل/تعطيل)
+// تغيير حالة المستخدم
 const toggleUserStatus = async (req, res) => {
     try {
         const user = await User.findByPk(req.params.id);
-
         if (!user) {
             return res.status(404).json({ error: 'المستخدم غير موجود' });
         }
 
-        // منع تعطيل المشرف العام
-        if (user.role === 'super_admin') {
-            return res.status(403).json({ error: 'لا يمكن تغيير حالة المشرف العام' });
+        if (user.role === 'admin') {
+            return res.status(403).json({ error: 'لا يمكن تغيير حالة مدير النظام' });
         }
 
         await user.update({ is_active: !user.is_active });
 
         res.json({
             success: true,
-            message: user.is_active ? '✅ تم تفعيل المستخدم' : '✅ تم تعطيل المستخدم'
+            message: user.is_active ? 'تم تفعيل المستخدم' : 'تم تعطيل المستخدم'
         });
     } catch (error) {
         console.error('❌ خطأ:', error);
@@ -99,20 +133,41 @@ const toggleUserStatus = async (req, res) => {
 const deleteUser = async (req, res) => {
     try {
         const user = await User.findByPk(req.params.id);
-
         if (!user) {
             return res.status(404).json({ error: 'المستخدم غير موجود' });
         }
 
-        if (user.role === 'super_admin') {
-            return res.status(403).json({ error: 'لا يمكن حذف المشرف العام' });
+        if (user.role === 'admin') {
+            return res.status(403).json({ error: 'لا يمكن حذف مدير النظام' });
         }
 
         await user.destroy();
 
+        res.json({ success: true, message: 'تم حذف المستخدم بنجاح' });
+    } catch (error) {
+        console.error('❌ خطأ:', error);
+        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+    }
+};
+
+// إحصائيات المستخدمين
+const getUserStats = async (req, res) => {
+    try {
+        const totalUsers = await User.count();
+        const admins = await User.count({ where: { role: 'admin' } });
+        const doctors = await User.count({ where: { role: 'doctor' } });
+        const receptionists = await User.count({ where: { role: 'receptionist' } });
+        const activeUsers = await User.count({ where: { is_active: true } });
+
         res.json({
             success: true,
-            message: '✅ تم حذف المستخدم بنجاح'
+            stats: {
+                total: totalUsers,
+                admins,
+                doctors,
+                receptionists,
+                active: activeUsers
+            }
         });
     } catch (error) {
         console.error('❌ خطأ:', error);
@@ -123,6 +178,9 @@ const deleteUser = async (req, res) => {
 module.exports = {
     createUser,
     getAllUsers,
+    getUserById,
+    updateUser,
     toggleUserStatus,
-    deleteUser
+    deleteUser,
+    getUserStats
 };
