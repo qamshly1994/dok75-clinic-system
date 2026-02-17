@@ -1,11 +1,3 @@
-/**
- * ============================================
- * مسارات الاستبيانات (Questionnaires)
- * حسب تخصصات العيادة
- * الموقع: /routes/questionnaires.js
- * ============================================
- */
-
 const express = require('express');
 const router = express.Router();
 const questionnaireController = require('../controllers/questionnaireController');
@@ -15,7 +7,7 @@ const { doctorOnly } = require('../middleware/roles');
 // جميع المسارات تتطلب توثيق
 router.use(protect);
 
-// إنشاء استبيان جديد (للدكتور فقط)
+// إنشاء استبيان جديد
 router.post('/', doctorOnly, questionnaireController.createQuestionnaire);
 
 // عرض استبيانات مريض معين
@@ -26,8 +18,5 @@ router.get('/:id', questionnaireController.getQuestionnaireById);
 
 // تحديث استبيان
 router.put('/:id', doctorOnly, questionnaireController.updateQuestionnaire);
-
-// عرض استبيانات قسم معين
-router.get('/department/:departmentId', doctorOnly, questionnaireController.getDepartmentQuestionnaires);
 
 module.exports = router;
