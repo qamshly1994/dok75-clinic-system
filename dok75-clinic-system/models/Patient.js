@@ -10,7 +10,7 @@ module.exports = (sequelize) => {
         patient_number: {
             type: DataTypes.STRING(20),
             unique: true,
-            allowNull: false
+            allowNull: true  // ✅ تغيير من false إلى true مؤقتاً
         },
         full_name: {
             type: DataTypes.STRING(100),
@@ -32,13 +32,11 @@ module.exports = (sequelize) => {
             type: DataTypes.TEXT,
             allowNull: true
         },
-        // الملف الطبي الموحد (يتجمع فيه كل شيء)
         medical_history: {
             type: DataTypes.TEXT,
             allowNull: true,
             defaultValue: ''
         },
-        // روابط المستندات والصور
         documents: {
             type: DataTypes.JSONB,
             allowNull: true,
