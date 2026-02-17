@@ -10,7 +10,7 @@ module.exports = (sequelize) => {
         patient_number: {
             type: DataTypes.STRING(20),
             unique: true,
-            allowNull: true  // ✅ تغيير من false إلى true مؤقتاً
+            allowNull: true
         },
         full_name: {
             type: DataTypes.STRING(100),
@@ -20,8 +20,20 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING(20),
             allowNull: false
         },
+        alternate_phone: {
+            type: DataTypes.STRING(20),
+            allowNull: true
+        },
+        email: {
+            type: DataTypes.STRING(100),
+            allowNull: true
+        },
         age: {
             type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        birth_date: {
+            type: DataTypes.DATEONLY,
             allowNull: true
         },
         gender: {
@@ -37,10 +49,23 @@ module.exports = (sequelize) => {
             allowNull: true,
             defaultValue: ''
         },
+        notes: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+            defaultValue: ''
+        },
         documents: {
             type: DataTypes.JSONB,
             allowNull: true,
             defaultValue: []
+        },
+        clinic_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'clinics',
+                key: 'id'
+            }
         },
         created_by: {
             type: DataTypes.INTEGER,
@@ -49,10 +74,6 @@ module.exports = (sequelize) => {
                 model: 'users',
                 key: 'id'
             }
-        },
-        clinic_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false
         },
         is_active: {
             type: DataTypes.BOOLEAN,
