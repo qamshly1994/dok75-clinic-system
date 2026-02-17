@@ -9,15 +9,27 @@ module.exports = (sequelize) => {
         },
         patient_id: {
             type: DataTypes.INTEGER,
-            allowNull: false
+            allowNull: false,
+            references: {
+                model: 'patients',
+                key: 'id'
+            }
         },
         doctor_id: {
             type: DataTypes.INTEGER,
-            allowNull: false
+            allowNull: false,
+            references: {
+                model: 'users',
+                key: 'id'
+            }
         },
         department_id: {
             type: DataTypes.INTEGER,
             allowNull: true
+        },
+        session_date: {
+            type: DataTypes.DATE,
+            defaultValue: DataTypes.NOW
         },
         // استبيان التغذية
         nutrition: {
@@ -37,13 +49,10 @@ module.exports = (sequelize) => {
             allowNull: true,
             defaultValue: {}
         },
-        created_at: {
-            type: DataTypes.DATE,
-            defaultValue: DataTypes.NOW
-        },
-        updated_at: {
-            type: DataTypes.DATE,
-            defaultValue: DataTypes.NOW
+        // ملاحظات الطبيب
+        doctor_notes: {
+            type: DataTypes.TEXT,
+            allowNull: true
         }
     });
 
