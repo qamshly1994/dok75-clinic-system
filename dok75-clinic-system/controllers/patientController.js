@@ -1,4 +1,11 @@
-const { Patient, User, Clinic, Visit, Appointment } = require('../models');
+/**
+ * ============================================
+ * وحدة تحكم المرضى (Patient Controller)
+ * نسخة محدثة مع صلاحيات كاملة
+ * ============================================
+ */
+
+const { Patient, User, Clinic, Appointment, Visit } = require('../models');
 const { Op } = require('sequelize');
 
 // إنشاء رقم مريض موحد
@@ -8,11 +15,12 @@ async function generatePatientNumber() {
     return `PAT-${String(lastId + 1).padStart(6, '0')}`;
 }
 
-// إضافة مريض جديد
+// إضافة مريض جديد (الكل)
 const createPatient = async (req, res) => {
     try {
-        const { full_name, phone, age, birth_date, gender, address, notes, clinic_id } = req.body;
+        const { full_name, phone, age, gender, address, notes } = req.body;
 
+        // البحث عن مريض موجود
         const existingPatient = await Patient.findOne({
             where: {
                 [Op.and]: [
@@ -38,11 +46,10 @@ const createPatient = async (req, res) => {
             full_name: full_name.trim(),
             phone: phone.trim(),
             age: age || null,
-            birth_date: birth_date || null,
             gender: gender || null,
             address: address || null,
             notes: notes || '',
-            clinic_id: clinic_id || req.user.clinic_id,
+            clinic_id: req.user.clinic_id || 1,
             created_by: req.user.id,
             medical_history: '',
             documents: []
@@ -61,7 +68,7 @@ const createPatient = async (req, res) => {
     }
 };
 
-// عرض جميع المرضى (للأدمن والاستقبال)
+// عرض جميع المرضى (للاستقبال والمشرف)
 const getAllPatients = async (req, res) => {
     try {
         const patients = await Patient.findAll({
@@ -74,7 +81,7 @@ const getAllPatients = async (req, res) => {
 
         res.json({ success: true, count: patients.length, patients });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في جلب المرضى:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
@@ -82,24 +89,34 @@ const getAllPatients = async (req, res) => {
 // عرض مرضى الدكتور فقط
 const getDoctorPatients = async (req, res) => {
     try {
+        // البحث عن المرضى الذين لهم مواعيد أو زيارات مع هذا الدكتور
         const patients = await Patient.findAll({
-            include: [{
-                model: Visit,
-                where: { doctor_id: req.user.id },
-                required: true
-            }],
+            include: [
+                {
+                    model: Appointment,
+                    where: { doctor_id: req.user.id },
+                    required: true,
+                    attributes: []
+                },
+                {
+                    model: Visit,
+                    required: false,
+                    limit: 1,
+                    order: [['visit_date', 'DESC']]
+                }
+            ],
             distinct: true,
             order: [['createdAt', 'DESC']]
         });
 
         res.json({ success: true, count: patients.length, patients });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في جلب مرضى الدكتور:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
 
-// عرض مريض محدد مع سجل زياراته
+// عرض مريض محدد
 const getPatientById = async (req, res) => {
     try {
         const patient = await Patient.findByPk(req.params.id, {
@@ -107,17 +124,19 @@ const getPatientById = async (req, res) => {
                 { model: Clinic },
                 { model: User, as: 'creator', attributes: ['id', 'full_name'] },
                 {
-                    model: Visit,
-                    include: [
-                        { model: User, as: 'doctor', attributes: ['id', 'full_name'] },
-                        { model: Appointment }
-                    ],
-                    order: [['visit_date', 'DESC']]
+                    model: Appointment,
+                    where: req.user.role === 'doctor' ? { doctor_id: req.user.id } : {},
+                    required: req.user.role === 'doctor',
+                    order: [['appointment_date', 'DESC']]
                 },
                 {
-                    model: Appointment,
-                    limit: 10,
-                    order: [['appointment_date', 'DESC']]
+                    model: Visit,
+                    where: req.user.role === 'doctor' ? { doctor_id: req.user.id } : {},
+                    required: false,
+                    include: [
+                        { model: User, as: 'doctor', attributes: ['id', 'full_name'] }
+                    ],
+                    order: [['visit_date', 'DESC']]
                 }
             ]
         });
@@ -128,12 +147,12 @@ const getPatientById = async (req, res) => {
 
         res.json({ success: true, patient });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في جلب المريض:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
 
-// تحديث بيانات مريض
+// تحديث بيانات مريض (للاستقبال والدكتور)
 const updatePatient = async (req, res) => {
     try {
         const patient = await Patient.findByPk(req.params.id);
@@ -141,37 +160,37 @@ const updatePatient = async (req, res) => {
             return res.status(404).json({ error: 'المريض غير موجود' });
         }
 
-        const { full_name, phone, age, birth_date, gender, address, notes } = req.body;
+        // التحقق من صلاحية الدكتور
+        if (req.user.role === 'doctor') {
+            const hasAccess = await Appointment.findOne({
+                where: {
+                    patient_id: patient.id,
+                    doctor_id: req.user.id
+                }
+            });
+            if (!hasAccess) {
+                return res.status(403).json({ error: 'لا يمكنك تعديل بيانات هذا المريض' });
+            }
+        }
+
+        const { full_name, phone, age, gender, address, notes } = req.body;
 
         await patient.update({
             full_name: full_name || patient.full_name,
             phone: phone || patient.phone,
             age: age || patient.age,
-            birth_date: birth_date || patient.birth_date,
             gender: gender || patient.gender,
             address: address || patient.address,
             notes: notes || patient.notes
         });
 
-        res.json({ success: true, message: 'تم تحديث البيانات', patient });
+        res.json({ 
+            success: true, 
+            message: 'تم تحديث بيانات المريض', 
+            patient 
+        });
     } catch (error) {
-        console.error('❌ خطأ:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// حذف مريض
-const deletePatient = async (req, res) => {
-    try {
-        const patient = await Patient.findByPk(req.params.id);
-        if (!patient) {
-            return res.status(404).json({ error: 'المريض غير موجود' });
-        }
-
-        await patient.destroy();
-        res.json({ success: true, message: 'تم حذف المريض' });
-    } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في تحديث المريض:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
@@ -194,26 +213,7 @@ const searchPatients = async (req, res) => {
 
         res.json({ success: true, count: patients.length, patients });
     } catch (error) {
-        console.error('❌ خطأ:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// سجل زيارات المريض
-const getPatientVisits = async (req, res) => {
-    try {
-        const visits = await Visit.findAll({
-            where: { patient_id: req.params.id },
-            include: [
-                { model: User, as: 'doctor', attributes: ['id', 'full_name'] },
-                { model: Appointment }
-            ],
-            order: [['visit_date', 'DESC']]
-        });
-
-        res.json({ success: true, count: visits.length, visits });
-    } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في البحث:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
@@ -226,20 +226,15 @@ const getPatientStats = async (req, res) => {
         today.setHours(0, 0, 0, 0);
 
         const todayCount = await Patient.count({
-            where: {
-                createdAt: { [Op.gte]: today }
-            }
+            where: { createdAt: { [Op.gte]: today } }
         });
 
         res.json({
             success: true,
-            stats: {
-                total,
-                today: todayCount
-            }
+            stats: { total, today: todayCount }
         });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في جلب الإحصائيات:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
@@ -250,8 +245,6 @@ module.exports = {
     getDoctorPatients,
     getPatientById,
     updatePatient,
-    deletePatient,
     searchPatients,
-    getPatientVisits,
     getPatientStats
 };
