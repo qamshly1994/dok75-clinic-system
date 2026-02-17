@@ -120,3 +120,9 @@ module.exports = {
     Treatment,
     Questionnaire // ← جديد
 };
+// Questionnaire relations
+Questionnaire.belongsTo(Patient, { foreignKey: 'patient_id' });
+Patient.hasMany(Questionnaire, { foreignKey: 'patient_id' });
+
+Questionnaire.belongsTo(User, { foreignKey: 'doctor_id' });
+User.hasMany(Questionnaire, { foreignKey: 'doctor_id' });
