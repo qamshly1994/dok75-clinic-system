@@ -1,7 +1,14 @@
-const { Visit, Patient, User, Appointment, Clinic } = require('../models');
+/**
+ * ============================================
+ * وحدة تحكم الزيارات (Visit Controller)
+ * للدكتور فقط - كتابة وتعديل الملاحظات
+ * ============================================
+ */
+
+const { Visit, Patient, User, Appointment } = require('../models');
 const { Op } = require('sequelize');
 
-// إنشاء زيارة جديدة
+// إنشاء زيارة جديدة (للدكتور فقط)
 const createVisit = async (req, res) => {
     try {
         const { patient_id, appointment_id, complaint, diagnosis, treatment, doctor_notes, prescriptions } = req.body;
@@ -9,6 +16,18 @@ const createVisit = async (req, res) => {
         const patient = await Patient.findByPk(patient_id);
         if (!patient) {
             return res.status(404).json({ error: 'المريض غير موجود' });
+        }
+
+        // التحقق من أن المريض يتبع هذا الدكتور
+        const hasAccess = await Appointment.findOne({
+            where: {
+                patient_id,
+                doctor_id: req.user.id
+            }
+        });
+
+        if (!hasAccess && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'لا يمكنك إضافة زيارة لهذا المريض' });
         }
 
         const visit = await Visit.create({
@@ -25,14 +44,13 @@ const createVisit = async (req, res) => {
         });
 
         // تحديث سجل المريض الطبي
-        const visitSummary = `[${new Date().toLocaleDateString('ar-SA')}] ${diagnosis || 'تشخيص'}\n`;
+        const visitSummary = `[${new Date().toLocaleDateString('ar-SA')}] ${diagnosis || 'تشخيص'}\nملاحظات: ${doctor_notes || 'لا توجد'}\n`;
         await patient.update({
             medical_history: patient.medical_history 
                 ? visitSummary + patient.medical_history 
                 : visitSummary
         });
 
-        // تحديث حالة الموعد إذا كان مرتبطاً
         if (appointment_id) {
             await Appointment.update(
                 { status: 'completed' },
@@ -40,10 +58,17 @@ const createVisit = async (req, res) => {
             );
         }
 
+        const createdVisit = await Visit.findByPk(visit.id, {
+            include: [
+                { model: Patient },
+                { model: User, as: 'doctor', attributes: ['id', 'full_name'] }
+            ]
+        });
+
         res.status(201).json({
             success: true,
             message: 'تم تسجيل الزيارة بنجاح',
-            visit
+            visit: createdVisit
         });
 
     } catch (error) {
@@ -52,32 +77,13 @@ const createVisit = async (req, res) => {
     }
 };
 
-// عرض جميع الزيارات (للأدمن)
-const getAllVisits = async (req, res) => {
-    try {
-        const visits = await Visit.findAll({
-            include: [
-                { model: Patient },
-                { model: User, as: 'doctor', attributes: ['id', 'full_name'] },
-                { model: Appointment },
-                { model: Clinic }
-            ],
-            order: [['visit_date', 'DESC']],
-            limit: 100
-        });
-
-        res.json({ success: true, count: visits.length, visits });
-    } catch (error) {
-        console.error('❌ خطأ:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// عرض زيارات مريض محدد
+// عرض زيارات مريض محدد (للدكتور)
 const getPatientVisits = async (req, res) => {
     try {
+        const { patientId } = req.params;
+
         const visits = await Visit.findAll({
-            where: { patient_id: req.params.patientId },
+            where: { patient_id: patientId },
             include: [
                 { model: User, as: 'doctor', attributes: ['id', 'full_name'] },
                 { model: Appointment }
@@ -87,7 +93,7 @@ const getPatientVisits = async (req, res) => {
 
         res.json({ success: true, count: visits.length, visits });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في جلب الزيارات:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
@@ -99,8 +105,7 @@ const getVisitById = async (req, res) => {
             include: [
                 { model: Patient },
                 { model: User, as: 'doctor', attributes: ['id', 'full_name'] },
-                { model: Appointment },
-                { model: Clinic }
+                { model: Appointment }
             ]
         });
 
@@ -110,12 +115,12 @@ const getVisitById = async (req, res) => {
 
         res.json({ success: true, visit });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في جلب الزيارة:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
 
-// تحديث زيارة
+// تحديث زيارة (للدكتور الذي أنشأها)
 const updateVisit = async (req, res) => {
     try {
         const visit = await Visit.findByPk(req.params.id);
@@ -137,58 +142,20 @@ const updateVisit = async (req, res) => {
             prescriptions: prescriptions || visit.prescriptions
         });
 
-        res.json({ success: true, message: 'تم تحديث الزيارة', visit });
-    } catch (error) {
-        console.error('❌ خطأ:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// حذف زيارة
-const deleteVisit = async (req, res) => {
-    try {
-        const visit = await Visit.findByPk(req.params.id);
-        if (!visit) {
-            return res.status(404).json({ error: 'الزيارة غير موجودة' });
-        }
-
-        await visit.destroy();
-        res.json({ success: true, message: 'تم حذف الزيارة' });
-    } catch (error) {
-        console.error('❌ خطأ:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// إحصائيات الزيارات
-const getVisitStats = async (req, res) => {
-    try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        const total = await Visit.count();
-        const todayVisits = await Visit.count({
-            where: { visit_date: { [Op.gte]: today, [Op.lt]: tomorrow } }
-        });
-
-        res.json({
-            success: true,
-            stats: { total, today: todayVisits }
+        res.json({ 
+            success: true, 
+            message: 'تم تحديث الزيارة', 
+            visit 
         });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في تحديث الزيارة:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
 
 module.exports = {
     createVisit,
-    getAllVisits,
     getPatientVisits,
     getVisitById,
-    updateVisit,
-    deleteVisit,
-    getVisitStats
+    updateVisit
 };
