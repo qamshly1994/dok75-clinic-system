@@ -1,7 +1,7 @@
 /**
  * ============================================
  * DOK75 - نظام إدارة العيادات المتكامل
- * الملف الرئيسي للتطبيق (نسخة نهائية)
+ * الملف الرئيسي للتطبيق (نسخة احترافية)
  * ============================================
  */
 
@@ -10,7 +10,9 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
+const morgan = require('morgan');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 
 // تحميل متغيرات البيئة
@@ -27,7 +29,8 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const patientRoutes = require('./routes/patients');
 const appointmentRoutes = require('./routes/appointments');
-const questionnaireRoutes = require('./routes/questionnaires');
+const visitRoutes = require('./routes/visits');
+const clinicRoutes = require('./routes/clinics');
 
 // إنشاء تطبيق Express
 const app = express();
@@ -48,6 +51,19 @@ app.use(cors({
     credentials: true
 }));
 
+// تسجيل الطلبات (Logging)
+app.use(morgan('combined'));
+
+// تحديد عدد الطلبات المسموحة (Rate Limiting)
+const limiter = rateLimit({
+    windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000,
+    max: process.env.RATE_LIMIT_MAX || 100,
+    message: { 
+        error: '⚠️ عدد كبير جداً من الطلبات، الرجاء المحاولة بعد 15 دقيقة' 
+    }
+});
+app.use('/api/', limiter);
+
 // معالجة البيانات (Body Parser)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -64,7 +80,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
-app.use('/api/questionnaires', questionnaireRoutes);
+app.use('/api/visits', visitRoutes);
+app.use('/api/clinics', clinicRoutes);
 
 // ============================================
 // المسارات العامة (Frontend)
@@ -110,7 +127,7 @@ app.get('/api/health', (req, res) => {
         time: new Date().toLocaleString('ar-SA'),
         developer: process.env.DEV_NAME,
         phone: process.env.DEV_PHONE,
-        version: '2.1.0'
+        version: '3.0.0'
     });
 });
 
@@ -120,7 +137,6 @@ app.get('/api/health', (req, res) => {
 
 // مسار 404 - غير موجود
 app.use('*', (req, res) => {
-    // التحقق مما إذا كان الطلب يطلب صفحة HTML
     if (req.accepts('html')) {
         res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
     } else {
@@ -163,7 +179,7 @@ const startServer = async () => {
         await sequelize.sync({ alter: true });
         console.log('✅ تم مزامنة النماذج مع قاعدة البيانات');
 
-        // ✅ تشغيل Auto Seed Admin (إنشاء المشرف العام إذا لم يكن موجوداً)
+        // تشغيل Auto Seed Admin
         await seedAdmin();
         console.log('✅ تم التحقق من وجود المشرف العام');
 
@@ -176,12 +192,11 @@ const startServer = async () => {
             console.log(`📞 للتواصل: ${process.env.DEV_PHONE}`);
             console.log('=================================');
             console.log('📌 المسارات المتاحة:');
-            console.log('   - /');
-            console.log('   - /login');
-            console.log('   - /admin-dashboard');
-            console.log('   - /doctor-dashboard');
-            console.log('   - /reception-dashboard');
-            console.log('   - /dashboard');
+            console.log('   - / (صفحة تسجيل الدخول)');
+            console.log('   - /admin-dashboard (مدير النظام)');
+            console.log('   - /doctor-dashboard (طبيب)');
+            console.log('   - /reception-dashboard (استقبال)');
+            console.log('   - /api/health (فحص الخادم)');
             console.log('=================================');
         });
 
