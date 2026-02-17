@@ -1,7 +1,7 @@
 /**
  * ============================================
  * DOK75 - نظام إدارة العيادات المتعددة
- * الملف الرئيسي للتطبيق (نسخة Pro مع Auto Seed)
+ * الملف الرئيسي للتطبيق (نسخة العيادة الواحدة)
  * ============================================
  */
 
@@ -33,6 +33,10 @@ const specializationRoutes = require('./routes/specializations');
 const patientRoutes = require('./routes/patients');
 const appointmentRoutes = require('./routes/appointments');
 const treatmentRoutes = require('./routes/treatments');
+const questionnaireRoutes = require('./routes/questionnaires'); // ← جديد
+
+// استيراد وسيط العيادة الواحدة (جديد)
+const { ensureSingleClinic, enforceSingleClinic } = require('./middleware/singleClinic');
 
 // إنشاء تطبيق Express
 const app = express();
@@ -74,6 +78,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ============================================
+// وسيط العيادة الواحدة (جديد)
+// ============================================
+app.use(ensureSingleClinic);
+app.use(enforceSingleClinic);
+
+// ============================================
 // تسجيل المسارات (Routes)
 // ============================================
 
@@ -86,6 +96,7 @@ app.use('/api/specializations', specializationRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/treatments', treatmentRoutes);
+app.use('/api/questionnaires', questionnaireRoutes); // ← جديد
 
 // ============================================
 // المسارات العامة (Frontend)
@@ -109,6 +120,10 @@ app.get('/doctor-dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'doctor-dashboard.html'));
 });
 
+app.get('/reception-dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'reception-dashboard.html')); // ← جديد
+});
+
 // ============================================
 // مسار التحقق من صحة الخادم
 // ============================================
@@ -119,7 +134,7 @@ app.get('/api/health', (req, res) => {
         time: new Date().toLocaleString('ar-SA'),
         developer: process.env.DEV_NAME,
         phone: process.env.DEV_PHONE,
-        version: '2.0.0'
+        version: '2.1.0'
     });
 });
 
@@ -164,15 +179,10 @@ const startServer = async () => {
         console.log('✅ تم الاتصال بقاعدة البيانات PostgreSQL بنجاح');
 
         // مزامنة النماذج (إنشاء الجداول إذا لم تكن موجودة)
-        if (process.env.NODE_ENV === 'development') {
-            await sequelize.sync({ alter: true });
-            console.log('✅ تم مزامنة النماذج مع قاعدة البيانات');
-        } else {
-            await sequelize.sync();
-            console.log('✅ تم التحقق من النماذج');
-        }
+        await sequelize.sync({ alter: true });
+        console.log('✅ تم مزامنة النماذج مع قاعدة البيانات');
 
-        // ✅ تشغيل Auto Seed Admin (إنشاء المشرف العام إذا لم يكن موجوداً)
+        // ✅ تشغيل Auto Seed Admin
         await seedAdmin();
         console.log('✅ تم التحقق من وجود المشرف العام');
 
