@@ -1,38 +1,60 @@
+/**
+ * ============================================
+ * وحدة تحكم المواعيد (Appointment Controller)
+ * نسخة محدثة مع الصلاحيات الكاملة
+ * ============================================
+ */
+
 const { Appointment, Patient, User, Clinic } = require('../models');
 const { Op } = require('sequelize');
 
-// إنشاء موعد جديد
+// إنشاء موعد جديد (للاستقبال والدكتور)
 const createAppointment = async (req, res) => {
     try {
-        const { patient_id, doctor_id, appointment_date, notes, clinic_id } = req.body;
+        const { patient_id, doctor_id, appointment_date, notes } = req.body;
 
+        // التحقق من وجود المريض
         const patient = await Patient.findByPk(patient_id);
         if (!patient) {
             return res.status(404).json({ error: 'المريض غير موجود' });
         }
 
+        // التحقق من وجود الدكتور (حتى لو كان غير نشط)
         const doctor = await User.findOne({
-            where: { id: doctor_id, role: 'doctor', is_active: true }
+            where: { id: doctor_id, role: 'doctor' } // بدون شرط is_active
         });
         if (!doctor) {
-            return res.status(404).json({ error: 'الدكتور غير موجود أو غير نشط' });
+            return res.status(404).json({ error: 'الدكتور غير موجود' });
         }
 
+        // التحقق من صلاحية الدكتور
+        if (req.user.role === 'doctor' && req.user.id !== doctor_id) {
+            return res.status(403).json({ error: 'لا يمكنك حجز موعد لدكتور آخر' });
+        }
+
+        // إنشاء الموعد
         const appointment = await Appointment.create({
             patient_id,
             doctor_id,
-            receptionist_id: req.user.id,
-            clinic_id: clinic_id || req.user.clinic_id,
+            receptionist_id: req.user.role === 'receptionist' ? req.user.id : null,
+            clinic_id: patient.clinic_id,
             appointment_date,
             notes,
             status: 'scheduled',
             created_by: req.user.id
         });
 
+        const createdAppointment = await Appointment.findByPk(appointment.id, {
+            include: [
+                { model: Patient },
+                { model: User, as: 'doctor', attributes: ['id', 'full_name'] }
+            ]
+        });
+
         res.status(201).json({
             success: true,
             message: 'تم حجز الموعد بنجاح',
-            appointment
+            appointment: createdAppointment
         });
 
     } catch (error) {
@@ -41,16 +63,18 @@ const createAppointment = async (req, res) => {
     }
 };
 
-// عرض جميع المواعيد
+// عرض جميع المواعيد (حسب الصلاحية)
 const getAllAppointments = async (req, res) => {
     try {
         const { startDate, endDate, status, doctor_id } = req.query;
         let whereClause = {};
 
+        // فلترة حسب الصلاحية
         if (req.user.role === 'doctor') {
             whereClause.doctor_id = req.user.id;
         }
 
+        // فلترة حسب التاريخ
         if (startDate && endDate) {
             whereClause.appointment_date = {
                 [Op.between]: [new Date(startDate), new Date(endDate)]
@@ -58,7 +82,7 @@ const getAllAppointments = async (req, res) => {
         }
 
         if (status) whereClause.status = status;
-        if (doctor_id) whereClause.doctor_id = doctor_id;
+        if (doctor_id && req.user.role !== 'doctor') whereClause.doctor_id = doctor_id;
 
         const appointments = await Appointment.findAll({
             where: whereClause,
@@ -70,9 +94,13 @@ const getAllAppointments = async (req, res) => {
             order: [['appointment_date', 'ASC']]
         });
 
-        res.json({ success: true, count: appointments.length, appointments });
+        res.json({ 
+            success: true, 
+            count: appointments.length, 
+            appointments 
+        });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في جلب المواعيد:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
@@ -103,9 +131,13 @@ const getTodayAppointments = async (req, res) => {
             order: [['appointment_date', 'ASC']]
         });
 
-        res.json({ success: true, count: appointments.length, appointments });
+        res.json({ 
+            success: true, 
+            count: appointments.length, 
+            appointments 
+        });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في جلب مواعيد اليوم:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
@@ -116,6 +148,11 @@ const getDoctorAppointments = async (req, res) => {
         const { doctorId } = req.params;
         const { date } = req.query;
 
+        // التحقق من الصلاحية
+        if (req.user.role === 'doctor' && req.user.id !== parseInt(doctorId)) {
+            return res.status(403).json({ error: 'لا يمكنك عرض مواعيد دكتور آخر' });
+        }
+
         let whereClause = { doctor_id: doctorId };
 
         if (date) {
@@ -123,7 +160,6 @@ const getDoctorAppointments = async (req, res) => {
             startDate.setHours(0, 0, 0, 0);
             const endDate = new Date(date);
             endDate.setHours(23, 59, 59, 999);
-
             whereClause.appointment_date = { [Op.between]: [startDate, endDate] };
         }
 
@@ -133,9 +169,13 @@ const getDoctorAppointments = async (req, res) => {
             order: [['appointment_date', 'ASC']]
         });
 
-        res.json({ success: true, count: appointments.length, appointments });
+        res.json({ 
+            success: true, 
+            count: appointments.length, 
+            appointments 
+        });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في جلب مواعيد الدكتور:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
@@ -156,14 +196,19 @@ const getAppointmentById = async (req, res) => {
             return res.status(404).json({ error: 'الموعد غير موجود' });
         }
 
+        // التحقق من الصلاحية
+        if (req.user.role === 'doctor' && appointment.doctor_id !== req.user.id) {
+            return res.status(403).json({ error: 'هذا الموعد لا يخصك' });
+        }
+
         res.json({ success: true, appointment });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في جلب الموعد:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
 
-// تحديث موعد
+// تحديث موعد (للاستقبال والدكتور)
 const updateAppointment = async (req, res) => {
     try {
         const appointment = await Appointment.findByPk(req.params.id);
@@ -171,50 +216,43 @@ const updateAppointment = async (req, res) => {
             return res.status(404).json({ error: 'الموعد غير موجود' });
         }
 
-        const { appointment_date, notes } = req.body;
-
-        await appointment.update({
-            appointment_date: appointment_date || appointment.appointment_date,
-            notes: notes || appointment.notes
-        });
-
-        res.json({ success: true, message: 'تم تحديث الموعد', appointment });
-    } catch (error) {
-        console.error('❌ خطأ:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
-    }
-};
-
-// تغيير حالة الموعد
-const updateAppointmentStatus = async (req, res) => {
-    try {
-        const { status } = req.body;
-        const appointment = await Appointment.findByPk(req.params.id);
-
-        if (!appointment) {
-            return res.status(404).json({ error: 'الموعد غير موجود' });
-        }
-
+        // التحقق من الصلاحية
         if (req.user.role === 'doctor' && appointment.doctor_id !== req.user.id) {
             return res.status(403).json({ error: 'لا يمكنك تعديل موعد ليس لك' });
         }
 
-        await appointment.update({ status });
+        const { appointment_date, doctor_id, notes } = req.body;
+
+        // إذا كان الدكتور يريد تغيير الدكتور (غير مسموح)
+        if (req.user.role === 'doctor' && doctor_id && doctor_id !== appointment.doctor_id) {
+            return res.status(403).json({ error: 'لا يمكنك تحويل الموعد لدكتور آخر' });
+        }
+
+        await appointment.update({
+            appointment_date: appointment_date || appointment.appointment_date,
+            doctor_id: doctor_id || appointment.doctor_id,
+            notes: notes || appointment.notes
+        });
+
+        const updatedAppointment = await Appointment.findByPk(appointment.id, {
+            include: [
+                { model: Patient },
+                { model: User, as: 'doctor' }
+            ]
+        });
 
         res.json({
             success: true,
-            message: `تم تغيير الحالة إلى: ${
-                status === 'scheduled' ? 'محجوز' :
-                status === 'completed' ? 'مكتمل' : 'ملغي'
-            }`
+            message: 'تم تحديث الموعد بنجاح',
+            appointment: updatedAppointment
         });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في تحديث الموعد:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
 
-// إلغاء موعد
+// تغيير حالة الموعد (إلغاء)
 const cancelAppointment = async (req, res) => {
     try {
         const appointment = await Appointment.findByPk(req.params.id);
@@ -222,11 +260,44 @@ const cancelAppointment = async (req, res) => {
             return res.status(404).json({ error: 'الموعد غير موجود' });
         }
 
+        // التحقق من الصلاحية
+        if (req.user.role === 'doctor' && appointment.doctor_id !== req.user.id) {
+            return res.status(403).json({ error: 'لا يمكنك إلغاء موعد ليس لك' });
+        }
+
         await appointment.update({ status: 'cancelled' });
 
-        res.json({ success: true, message: 'تم إلغاء الموعد' });
+        res.json({
+            success: true,
+            message: 'تم إلغاء الموعد بنجاح'
+        });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في إلغاء الموعد:', error);
+        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+    }
+};
+
+// حذف موعد (للاستقبال فقط)
+const deleteAppointment = async (req, res) => {
+    try {
+        const appointment = await Appointment.findByPk(req.params.id);
+        if (!appointment) {
+            return res.status(404).json({ error: 'الموعد غير موجود' });
+        }
+
+        // فقط الاستقبال والمشرف يمكنهم الحذف
+        if (req.user.role !== 'receptionist' && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'لا يمكنك حذف الموعد' });
+        }
+
+        await appointment.destroy();
+
+        res.json({
+            success: true,
+            message: 'تم حذف الموعد بنجاح'
+        });
+    } catch (error) {
+        console.error('❌ خطأ في حذف الموعد:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
@@ -239,24 +310,27 @@ const getAppointmentStats = async (req, res) => {
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
+        let whereClause = {};
+        if (req.user.role === 'doctor') {
+            whereClause.doctor_id = req.user.id;
+        }
+
         const scheduled = await Appointment.count({
-            where: {
-                status: 'scheduled',
-                ...(req.user.role === 'doctor' ? { doctor_id: req.user.id } : {})
-            }
+            where: { ...whereClause, status: 'scheduled' }
         });
 
         const completed = await Appointment.count({
-            where: {
-                status: 'completed',
-                ...(req.user.role === 'doctor' ? { doctor_id: req.user.id } : {})
-            }
+            where: { ...whereClause, status: 'completed' }
+        });
+
+        const cancelled = await Appointment.count({
+            where: { ...whereClause, status: 'cancelled' }
         });
 
         const todayAppointments = await Appointment.count({
             where: {
-                appointment_date: { [Op.between]: [today, tomorrow] },
-                ...(req.user.role === 'doctor' ? { doctor_id: req.user.id } : {})
+                ...whereClause,
+                appointment_date: { [Op.between]: [today, tomorrow] }
             }
         });
 
@@ -265,11 +339,12 @@ const getAppointmentStats = async (req, res) => {
             stats: {
                 scheduled,
                 completed,
+                cancelled,
                 today: todayAppointments
             }
         });
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في جلب الإحصائيات:', error);
         res.status(500).json({ error: 'حدث خطأ في الخادم' });
     }
 };
@@ -281,7 +356,7 @@ module.exports = {
     getDoctorAppointments,
     getAppointmentById,
     updateAppointment,
-    updateAppointmentStatus,
     cancelAppointment,
+    deleteAppointment,
     getAppointmentStats
 };
