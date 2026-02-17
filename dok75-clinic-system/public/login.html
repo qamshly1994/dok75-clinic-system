@@ -3,155 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DOK75 - دخول الأطباء</title>
+    <title>DOK75 - دخول الأطباء والموظفين</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
-        body {
-            background: linear-gradient(135deg, rgba(0,109,119,0.9) 0%, rgba(44,62,80,0.9) 100%), 
-                        url('/images/clinic-bg.jpg') no-repeat center center fixed;
+        /* أنماط إضافية مخصصة لصفحة تسجيل الدخول */
+        .login-page {
+            background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff" fill-opacity="0.1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
             background-size: cover;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            opacity: 0.5;
         }
         
         .login-card {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
-            border-radius: 40px;
-            padding: 50px 40px;
-            width: 100%;
-            max-width: 450px;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
-            text-align: center;
-            animation: slideUp 0.5s ease;
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
         }
         
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .logo {
-            margin-bottom: 20px;
-        }
-        
-        .logo h1 {
-            font-size: 60px;
-            font-weight: 900;
-            background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 5px;
-        }
-        
-        .logo span {
-            display: block;
-            font-size: 18px;
-            color: #2C3E50;
-            letter-spacing: 1px;
-            font-weight: 700;
-        }
-        
-        .badge {
-            background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: 500;
-            display: inline-block;
-            margin-bottom: 30px;
-        }
-        
-        .input-group {
-            margin-bottom: 25px;
-            text-align: right;
-        }
-        
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #2C3E50;
-            font-weight: 600;
-            font-size: 16px;
-        }
-        
-        .input-group input {
-            width: 100%;
-            padding: 16px 20px;
-            border: 2px solid #e0e0e0;
-            border-radius: 15px;
-            font-size: 16px;
-            font-family: 'Tajawal', sans-serif;
-            transition: all 0.3s;
-            background: #f8f9fa;
-        }
-        
-        .input-group input:focus {
-            border-color: #006D77;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(0,109,119,0.1);
-            outline: none;
-        }
-        
-        .btn-login {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
-            color: white;
-            border: none;
-            border-radius: 15px;
-            font-size: 20px;
-            font-weight: 700;
-            font-family: 'Tajawal', sans-serif;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 20px;
-            box-shadow: 0 10px 20px rgba(0,109,119,0.3);
-        }
-        
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(0,109,119,0.4);
-        }
-        
-        .btn-login:active {
-            transform: translateY(0);
-        }
-        
-        .features {
-            display: flex;
-            justify-content: space-around;
-            margin: 30px 0;
-            padding: 20px 0;
-            border-top: 1px solid #eee;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .feature-item {
-            text-align: center;
-        }
-        
-        .feature-icon {
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-        
-        .feature-text {
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .specialties {
+        .specialties-cloud {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
@@ -160,96 +42,153 @@
         }
         
         .specialty-tag {
-            background: #f0f0f0;
-            color: #2C3E50;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .footer {
-            margin-top: 30px;
-            color: #666;
-            font-size: 16px;
-            line-height: 1.8;
-        }
-        
-        .footer .name {
-            font-size: 20px;
-            font-weight: 700;
+            background: rgba(0,109,119,0.1);
             color: #006D77;
-            margin: 10px 0 5px;
+            padding: 6px 15px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
         }
         
-        .footer .phone {
-            display: inline-block;
-            background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
+        .specialty-tag:hover {
+            background: #006D77;
             color: white;
-            padding: 8px 25px;
-            border-radius: 50px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            margin-top: 10px;
-            direction: ltr;
+            transform: scale(1.05);
+        }
+        
+        .input-icon {
+            position: relative;
+        }
+        
+        .input-icon i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #006D77;
+            font-size: 18px;
+        }
+        
+        .input-icon input {
+            padding-right: 45px;
+        }
+        
+        .login-btn {
+            background: linear-gradient(135deg, #006D77 0%, #2C3E50 100%);
+            border: none;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 700;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,109,119,0.4);
+        }
+        
+        .login-btn i {
+            margin-left: 8px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .feature-item {
+            text-align: center;
+        }
+        
+        .feature-icon {
+            font-size: 24px;
+            color: #006D77;
+            margin-bottom: 5px;
+        }
+        
+        .feature-text {
+            font-size: 12px;
+            color: #666;
         }
     </style>
 </head>
-<body>
+<body class="login-page">
     <div class="login-card">
-        <div class="logo">
+        <div class="login-logo">
             <h1>DOK75</h1>
-            <span>مركز التجميل والعيادات المتخصصة</span>
+            <span>نظام إدارة العيادات المتكامل</span>
         </div>
         
-        <div class="badge">
-            ✨ نظام إدارة متكامل لـ 50+ دكتور
+        <div class="login-badge">
+            <i class="fas fa-check-circle"></i>
+            نظام احترافي لإدارة العيادات
         </div>
         
         <form id="loginForm">
-            <div class="input-group">
-                <label>👤 اسم المستخدم</label>
-                <input type="text" id="username" placeholder="أدخل اسم المستخدم" required>
+            <div class="form-group">
+                <label for="username">
+                    <i class="fas fa-user"></i>
+                    اسم المستخدم
+                </label>
+                <div class="input-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" class="form-control" placeholder="أدخل اسم المستخدم" required>
+                </div>
             </div>
             
-            <div class="input-group">
-                <label>🔑 كلمة المرور</label>
-                <input type="password" id="password" placeholder="أدخل كلمة المرور" required>
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-lock"></i>
+                    كلمة المرور
+                </label>
+                <div class="input-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" class="form-control" placeholder="أدخل كلمة المرور" required>
+                </div>
             </div>
             
-            <button type="submit" class="btn-login">دخول</button>
+            <button type="submit" class="btn btn-primary login-btn">
+                <i class="fas fa-sign-in-alt"></i>
+                تسجيل الدخول
+            </button>
         </form>
         
-        <div class="specialties">
-            <span class="specialty-tag">🦷 أسنان</span>
-            <span class="specialty-tag">🔬 ليزر</span>
-            <span class="specialty-tag">💆🏻 بشرة</span>
-            <span class="specialty-tag">🔪 تجميل</span>
-            <span class="specialty-tag">💇🏻 شعر</span>
-            <span class="specialty-tag">💊 عام</span>
-            <span class="specialty-tag">🧪 تحاليل</span>
-            <span class="specialty-tag">✨ علاج طبيعي</span>
+        <div class="specialties-cloud">
+            <span class="specialty-tag"><i class="fas fa-tooth"></i> أسنان</span>
+            <span class="specialty-tag"><i class="fas fa-bolt"></i> ليزر</span>
+            <span class="specialty-tag"><i class="fas fa-spa"></i> بشرة</span>
+            <span class="specialty-tag"><i class="fas fa-cut"></i> تجميل</span>
+            <span class="specialty-tag"><i class="fas fa-user-md"></i> طب عام</span>
+            <span class="specialty-tag"><i class="fas fa-heartbeat"></i> علاج طبيعي</span>
         </div>
         
-        <div class="features">
+        <div class="features-grid">
             <div class="feature-item">
-                <div class="feature-icon">👥</div>
+                <div class="feature-icon"><i class="fas fa-users"></i></div>
                 <div class="feature-text">50+ دكتور</div>
             </div>
             <div class="feature-item">
-                <div class="feature-icon">🏥</div>
+                <div class="feature-icon"><i class="fas fa-clinic-medical"></i></div>
                 <div class="feature-text">8 تخصصات</div>
             </div>
             <div class="feature-item">
-                <div class="feature-icon">🔐</div>
+                <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
                 <div class="feature-text">آمن جداً</div>
             </div>
         </div>
         
-        <div class="footer">
+        <div class="login-footer">
             <div>التصميم والبرمجة</div>
             <div class="name">المهندس عبدالرزاق</div>
-            <div class="phone">0995973668</div>
+            <div class="phone">
+                <i class="fas fa-phone"></i>
+                0995973668
+            </div>
         </div>
     </div>
     
@@ -259,6 +198,11 @@
             
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            // تغيير حالة الزر أثناء التحميل
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تسجيل الدخول...';
             
             try {
                 const res = await fetch('/api/auth/login', {
@@ -273,21 +217,38 @@
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     
-                    if (data.user.role === 'super_admin') {
-                        window.location.href = '/admin-dashboard';
-                    } else if (data.user.role === 'doctor') {
-                        window.location.href = '/doctor-dashboard';
-                    } else {
-                        window.location.href = '/dashboard';
-                    }
+                    // رسالة نجاح
+                    showAlert('تم تسجيل الدخول بنجاح! جاري التحويل...', 'success');
+                    
+                    // التوجيه حسب الدور
+                    setTimeout(() => {
+                        window.location.href = data.redirectTo || '/dashboard';
+                    }, 1000);
                 } else {
-                    alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+                    showAlert('اسم المستخدم أو كلمة المرور غير صحيحة', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> تسجيل الدخول';
                 }
             } catch (error) {
-                alert('حدث خطأ في الاتصال');
-                console.error(error);
+                console.error('خطأ:', error);
+                showAlert('حدث خطأ في الاتصال بالخادم', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> تسجيل الدخول';
             }
         });
+        
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'}`;
+            alertDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+            
+            const existingAlert = document.querySelector('.alert');
+            if (existingAlert) existingAlert.remove();
+            
+            document.querySelector('.login-card').insertBefore(alertDiv, document.querySelector('.login-footer'));
+            
+            setTimeout(() => alertDiv.remove(), 3000);
+        }
     </script>
 </body>
 </html>
