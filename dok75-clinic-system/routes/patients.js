@@ -2,36 +2,28 @@ const express = require('express');
 const router = express.Router();
 const patientController = require('../controllers/patientController');
 const { protect } = require('../middleware/auth');
-const { adminOnly, doctorOnly, receptionistOnly, doctorOwnPatient } = require('../middleware/roles');
+const { receptionistOnly, doctorOnly, patientBelongsToDoctor } = require('../middleware/roles');
 
 // جميع المسارات تتطلب توثيق
 router.use(protect);
 
-// إضافة مريض جديد (للاستقبال والدكتور)
-router.post('/', receptionistOnly, patientController.createPatient);
+// إضافة مريض جديد (الكل)
+router.post('/', patientController.createPatient);
 
-// عرض جميع المرضى (للأدمن والاستقبال)
-router.get('/', (req, res, next) => {
-    if (req.user.role === 'doctor') {
-        return patientController.getDoctorPatients(req, res);
-    }
-    return patientController.getAllPatients(req, res);
-});
+// عرض جميع المرضى (للاستقبال والمشرف)
+router.get('/all', receptionistOnly, patientController.getAllPatients);
 
-// عرض مريض محدد مع صلاحيات
-router.get('/:id', doctorOwnPatient, patientController.getPatientById);
+// عرض مرضى الدكتور فقط (للدكتور)
+router.get('/my-patients', doctorOnly, patientController.getDoctorPatients);
 
-// تحديث بيانات مريض (للاستقبال والأدمن)
-router.put('/:id', receptionistOnly, patientController.updatePatient);
+// عرض مريض محدد
+router.get('/:id', patientBelongsToDoctor, patientController.getPatientById);
 
-// حذف مريض (للأدمن فقط)
-router.delete('/:id', adminOnly, patientController.deletePatient);
+// تحديث بيانات مريض (للاستقبال والدكتور)
+router.put('/:id', patientBelongsToDoctor, patientController.updatePatient);
 
 // البحث عن مريض
 router.get('/search/:query', patientController.searchPatients);
-
-// سجل زيارات المريض
-router.get('/:id/visits', doctorOwnPatient, patientController.getPatientVisits);
 
 // إحصائيات المرضى
 router.get('/stats/summary', patientController.getPatientStats);
