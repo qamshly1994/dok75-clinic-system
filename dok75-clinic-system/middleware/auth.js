@@ -10,7 +10,9 @@ const protect = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findByPk(decoded.id);
+        const user = await User.findByPk(decoded.id, {
+            include: ['clinic']
+        });
 
         if (!user) {
             return res.status(401).json({ error: 'غير مصرح - مستخدم غير موجود' });
