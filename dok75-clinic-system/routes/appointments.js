@@ -1,42 +1,22 @@
-/**
- * ============================================
- * مسارات المواعيد (Appointments)
- * ============================================
- */
-
 const express = require('express');
 const router = express.Router();
 const appointmentController = require('../controllers/appointmentController');
 const { protect } = require('../middleware/auth');
+const { receptionistOnly } = require('../middleware/roles');
 
 // جميع المسارات تتطلب توثيق
 router.use(protect);
 
-// إنشاء موعد جديد
-router.post('/', appointmentController.createAppointment);
+// حجز موعد جديد (للاستقبال فقط)
+router.post('/', receptionistOnly, appointmentController.createAppointment);
 
-// عرض جميع المواعيد (مع فلترة)
-router.get('/', appointmentController.getAllAppointments);
+// عرض مواعيد اليوم (للاستقبال)
+router.get('/today', receptionistOnly, appointmentController.getTodayAppointments);
 
-// عرض موعد محدد
-router.get('/:id', appointmentController.getAppointmentById);
-
-// تحديث موعد
-router.put('/:id', appointmentController.updateAppointment);
-
-// تغيير حالة الموعد
-router.patch('/:id/status', appointmentController.updateAppointmentStatus);
-
-// إلغاء موعد
-router.delete('/:id', appointmentController.cancelAppointment);
-
-// عرض مواعيد طبيب محدد
+// عرض مواعيد دكتور معين
 router.get('/doctor/:doctorId', appointmentController.getDoctorAppointments);
 
-// عرض مواعيد يوم محدد
-router.get('/date/:date', appointmentController.getAppointmentsByDate);
-
-// عرض مواعيد مريض محدد
-router.get('/patient/:patientId', appointmentController.getPatientAppointments);
+// تحديث حالة الموعد
+router.patch('/:id/status', appointmentController.updateAppointmentStatus);
 
 module.exports = router;
