@@ -1,34 +1,23 @@
-/**
- * ============================================
- * مسارات المستخدمين (Users)
- * ============================================
- */
-
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const { protect } = require('../middleware/auth');
-const { superAdminOnly, selfOrAdmin } = require('../middleware/roles');
+const { superAdminOnly } = require('../middleware/roles');
 
-// جميع المسارات تتطلب توثيق
+// جميع المسارات تتطلب توثيق وصلاحية مشرف
 router.use(protect);
+router.use(superAdminOnly);
 
-// إنشاء مستخدم جديد (للسوبر أدمن فقط)
-router.post('/', superAdminOnly, userController.createUser);
+// إنشاء مستخدم جديد
+router.post('/', userController.createUser);
 
-// عرض جميع المستخدمين (للسوبر أدمن فقط)
-router.get('/', superAdminOnly, userController.getAllUsers);
-
-// عرض مستخدم محدد
-router.get('/:id', selfOrAdmin, userController.getUserById);
-
-// تحديث بيانات مستخدم
-router.put('/:id', superAdminOnly, userController.updateUser);
-
-// حذف مستخدم (للسوبر أدمن فقط)
-router.delete('/:id', superAdminOnly, userController.deleteUser);
+// عرض جميع المستخدمين
+router.get('/', userController.getAllUsers);
 
 // تغيير حالة المستخدم (تفعيل/تعطيل)
-router.patch('/:id/toggle-status', superAdminOnly, userController.toggleUserStatus);
+router.patch('/:id/toggle-status', userController.toggleUserStatus);
+
+// حذف مستخدم
+router.delete('/:id', userController.deleteUser);
 
 module.exports = router;
