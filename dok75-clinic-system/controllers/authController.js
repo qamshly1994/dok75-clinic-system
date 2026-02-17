@@ -1,11 +1,12 @@
 /**
  * ============================================
  * وحدة تحكم المصادقة (Authentication Controller)
+ * نسخة محدثة مع ربط تلقائي للأطباء بالعيادات
  * ============================================
  */
 
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, Clinic, Department, Specialization } = require('../models');
 
 // إنشاء توكن
 const generateToken = (id) => {
@@ -80,13 +81,47 @@ const logout = (req, res) => {
     });
 };
 
-// ✅ الحصول على بيانات المستخدم الحالي
+// ✅ الحصول على بيانات المستخدم الحالي (محدث مع ربط تلقائي)
 const getMe = async (req, res) => {
     try {
-        const user = await User.findByPk(req.user.id, {
+        let user = await User.findByPk(req.user.id, {
             attributes: { exclude: ['password'] },
-            include: ['clinic', 'department', 'specialization']
+            include: [
+                { model: Clinic, as: 'clinic' },
+                { model: Department, as: 'department' },
+                { model: Specialization, as: 'specialization' }
+            ]
         });
+        
+        // ============================================
+        // تحسين: ربط الأطباء بالعيادات تلقائياً
+        // إذا كان المستخدم دكتور وليس لديه عيادة
+        // ============================================
+        if (user.role === 'doctor' && !user.clinic_id) {
+            console.log(`⚠️ الدكتور ${user.username} ليس لديه عيادة. جاري البحث عن عيادة...`);
+            
+            // البحث عن أول عيادة نشطة
+            const firstClinic = await Clinic.findOne({ where: { is_active: true } });
+            
+            if (firstClinic) {
+                // ربط الدكتور بالعيادة
+                await user.update({ clinic_id: firstClinic.id });
+                
+                // إعادة جلب المستخدم مع العيادة
+                user = await User.findByPk(req.user.id, {
+                    attributes: { exclude: ['password'] },
+                    include: [
+                        { model: Clinic, as: 'clinic' },
+                        { model: Department, as: 'department' },
+                        { model: Specialization, as: 'specialization' }
+                    ]
+                });
+                
+                console.log(`✅ تم ربط الدكتور ${user.username} بالعيادة: ${firstClinic.name}`);
+            } else {
+                console.log('⚠️ لا توجد عيادات متاحة للربط');
+            }
+        }
         
         res.json({ 
             success: true, 
