@@ -2,11 +2,13 @@ const express = require('express');
 const router = express.Router();
 const questionnaireController = require('../controllers/questionnaireController');
 const { protect } = require('../middleware/auth');
+const { doctorOnly } = require('../middleware/roles');
 
-// جميع المسارات تتطلب توثيق
+// جميع المسارات تتطلب توثيق وصلاحية دكتور
 router.use(protect);
+router.use(doctorOnly);
 
-// إنشاء استبيان جديد
+// إضافة استبيان جديد
 router.post('/', questionnaireController.createQuestionnaire);
 
 // عرض استبيانات مريض
