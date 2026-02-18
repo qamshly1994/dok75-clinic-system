@@ -1,14 +1,7 @@
-/**
- * ============================================
- * وحدة تحكم الزيارات (Visit Controller)
- * للدكتور فقط - كتابة وتعديل الملاحظات
- * ============================================
- */
-
 const { Visit, Patient, User, Appointment } = require('../models');
 const { Op } = require('sequelize');
 
-// إنشاء زيارة جديدة (للدكتور فقط)
+// إنشاء زيارة جديدة
 const createVisit = async (req, res) => {
     try {
         const { patient_id, appointment_id, complaint, diagnosis, treatment, doctor_notes, prescriptions } = req.body;
@@ -16,18 +9,6 @@ const createVisit = async (req, res) => {
         const patient = await Patient.findByPk(patient_id);
         if (!patient) {
             return res.status(404).json({ error: 'المريض غير موجود' });
-        }
-
-        // التحقق من أن المريض يتبع هذا الدكتور
-        const hasAccess = await Appointment.findOne({
-            where: {
-                patient_id,
-                doctor_id: req.user.id
-            }
-        });
-
-        if (!hasAccess && req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'لا يمكنك إضافة زيارة لهذا المريض' });
         }
 
         const visit = await Visit.create({
@@ -77,7 +58,7 @@ const createVisit = async (req, res) => {
     }
 };
 
-// عرض زيارات مريض محدد (للدكتور)
+// عرض زيارات مريض محدد
 const getPatientVisits = async (req, res) => {
     try {
         const { patientId } = req.params;
@@ -120,7 +101,7 @@ const getVisitById = async (req, res) => {
     }
 };
 
-// تحديث زيارة (للدكتور الذي أنشأها)
+// تحديث زيارة
 const updateVisit = async (req, res) => {
     try {
         const visit = await Visit.findByPk(req.params.id);
