@@ -23,8 +23,17 @@ const { sequelize } = require('./models');
 
 // استيراد دالة Auto Seed
 const seedAdmin = require('./scripts/seed');
-// تجاهل طلبات favicon.ico
+
+// ============================================
+// إنشاء تطبيق Express (يجب أن يكون قبل أي استخدام لـ app)
+// ============================================
+const app = express();
+
+// ============================================
+// تجاهل طلبات favicon.ico (يجب أن يكون بعد تعريف app)
+// ============================================
 app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // ============================================
 // استيراد المسارات (Routes)
 // ============================================
@@ -34,9 +43,6 @@ const patientRoutes = require('./routes/patients');
 const appointmentRoutes = require('./routes/appointments');
 const visitRoutes = require('./routes/visits');
 const clinicRoutes = require('./routes/clinics');
-
-// إنشاء تطبيق Express
-const app = express();
 
 // ============================================
 // إعدادات الأمان والوسائط (Middleware)
