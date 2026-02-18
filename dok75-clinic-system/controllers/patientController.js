@@ -1,10 +1,3 @@
-/**
- * ============================================
- * وحدة تحكم المرضى (Patient Controller)
- * نسخة محدثة مع صلاحيات كاملة
- * ============================================
- */
-
 const { Patient, User, Clinic, Appointment, Visit } = require('../models');
 const { Op } = require('sequelize');
 
@@ -15,12 +8,11 @@ async function generatePatientNumber() {
     return `PAT-${String(lastId + 1).padStart(6, '0')}`;
 }
 
-// إضافة مريض جديد (الكل)
+// إضافة مريض جديد
 const createPatient = async (req, res) => {
     try {
         const { full_name, phone, age, gender, address, notes } = req.body;
 
-        // البحث عن مريض موجود
         const existingPatient = await Patient.findOne({
             where: {
                 [Op.and]: [
@@ -68,7 +60,7 @@ const createPatient = async (req, res) => {
     }
 };
 
-// عرض جميع المرضى (للاستقبال والمشرف)
+// عرض جميع المرضى
 const getAllPatients = async (req, res) => {
     try {
         const patients = await Patient.findAll({
@@ -89,7 +81,6 @@ const getAllPatients = async (req, res) => {
 // عرض مرضى الدكتور فقط
 const getDoctorPatients = async (req, res) => {
     try {
-        // البحث عن المرضى الذين لهم مواعيد أو زيارات مع هذا الدكتور
         const patients = await Patient.findAll({
             include: [
                 {
@@ -97,12 +88,6 @@ const getDoctorPatients = async (req, res) => {
                     where: { doctor_id: req.user.id },
                     required: true,
                     attributes: []
-                },
-                {
-                    model: Visit,
-                    required: false,
-                    limit: 1,
-                    order: [['visit_date', 'DESC']]
                 }
             ],
             distinct: true,
@@ -122,22 +107,7 @@ const getPatientById = async (req, res) => {
         const patient = await Patient.findByPk(req.params.id, {
             include: [
                 { model: Clinic },
-                { model: User, as: 'creator', attributes: ['id', 'full_name'] },
-                {
-                    model: Appointment,
-                    where: req.user.role === 'doctor' ? { doctor_id: req.user.id } : {},
-                    required: req.user.role === 'doctor',
-                    order: [['appointment_date', 'DESC']]
-                },
-                {
-                    model: Visit,
-                    where: req.user.role === 'doctor' ? { doctor_id: req.user.id } : {},
-                    required: false,
-                    include: [
-                        { model: User, as: 'doctor', attributes: ['id', 'full_name'] }
-                    ],
-                    order: [['visit_date', 'DESC']]
-                }
+                { model: User, as: 'creator', attributes: ['id', 'full_name'] }
             ]
         });
 
@@ -152,25 +122,12 @@ const getPatientById = async (req, res) => {
     }
 };
 
-// تحديث بيانات مريض (للاستقبال والدكتور)
+// تحديث بيانات مريض
 const updatePatient = async (req, res) => {
     try {
         const patient = await Patient.findByPk(req.params.id);
         if (!patient) {
             return res.status(404).json({ error: 'المريض غير موجود' });
-        }
-
-        // التحقق من صلاحية الدكتور
-        if (req.user.role === 'doctor') {
-            const hasAccess = await Appointment.findOne({
-                where: {
-                    patient_id: patient.id,
-                    doctor_id: req.user.id
-                }
-            });
-            if (!hasAccess) {
-                return res.status(403).json({ error: 'لا يمكنك تعديل بيانات هذا المريض' });
-            }
         }
 
         const { full_name, phone, age, gender, address, notes } = req.body;
