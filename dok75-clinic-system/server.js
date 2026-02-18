@@ -1,7 +1,7 @@
 /**
  * ============================================
  * DOK75 - نظام إدارة العيادات المتكامل
- * الملف الرئيسي للتطبيق (نسخة احترافية)
+ * الملف الرئيسي للتطبيق (نسخة نهائية)
  * ============================================
  */
 
@@ -24,7 +24,9 @@ const { sequelize } = require('./models');
 // استيراد دالة Auto Seed
 const seedAdmin = require('./scripts/seed');
 
+// ============================================
 // استيراد المسارات (Routes)
+// ============================================
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const patientRoutes = require('./routes/patients');
@@ -137,6 +139,7 @@ app.get('/api/health', (req, res) => {
 
 // مسار 404 - غير موجود
 app.use('*', (req, res) => {
+    // التحقق مما إذا كان الطلب يطلب صفحة HTML
     if (req.accepts('html')) {
         res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
     } else {
@@ -179,7 +182,7 @@ const startServer = async () => {
         await sequelize.sync({ alter: true });
         console.log('✅ تم مزامنة النماذج مع قاعدة البيانات');
 
-        // تشغيل Auto Seed Admin
+        // تشغيل Auto Seed Admin (إنشاء المشرف العام إذا لم يكن موجوداً)
         await seedAdmin();
         console.log('✅ تم التحقق من وجود المشرف العام');
 
@@ -193,10 +196,20 @@ const startServer = async () => {
             console.log('=================================');
             console.log('📌 المسارات المتاحة:');
             console.log('   - / (صفحة تسجيل الدخول)');
+            console.log('   - /login (صفحة تسجيل الدخول)');
             console.log('   - /admin-dashboard (مدير النظام)');
             console.log('   - /doctor-dashboard (طبيب)');
             console.log('   - /reception-dashboard (استقبال)');
+            console.log('   - /dashboard (لوحة عامة)');
             console.log('   - /api/health (فحص الخادم)');
+            console.log('=================================');
+            console.log('📌 مسارات API:');
+            console.log('   - /api/auth');
+            console.log('   - /api/users');
+            console.log('   - /api/patients');
+            console.log('   - /api/appointments');
+            console.log('   - /api/visits');
+            console.log('   - /api/clinics');
             console.log('=================================');
         });
 
