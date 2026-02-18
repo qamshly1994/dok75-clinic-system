@@ -212,4 +212,7 @@ async function seedAdmin() {
 }
 
 // تشغيل الدالة
-seedAdmin();
+seedAdmin();// تشغيل الدالة
+
+module.exports = seedAdmin;
+
