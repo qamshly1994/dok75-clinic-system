@@ -5,6 +5,9 @@
  * ============================================
  */
 
+// استيراد النماذج في الأعلى (تعديل مهم)
+const { Appointment, Visit } = require('../models');
+
 // التحقق من أن المستخدم Admin
 const adminOnly = (req, res, next) => {
     if (req.user.role !== 'admin') {
@@ -43,7 +46,6 @@ const appointmentBelongsToDoctor = async (req, res, next) => {
     try {
         if (req.user.role === 'admin') return next();
         
-        const { Appointment } = require('../models');
         const appointment = await Appointment.findByPk(req.params.id);
         
         if (!appointment) {
@@ -70,7 +72,6 @@ const patientBelongsToDoctor = async (req, res, next) => {
     try {
         if (req.user.role === 'admin' || req.user.role === 'receptionist') return next();
         
-        const { Appointment, Visit } = require('../models');
         const patientId = req.params.id || req.body.patient_id;
         
         // التحقق مما إذا كان للمريض مواعيد أو زيارات مع هذا الدكتور
