@@ -208,11 +208,7 @@ async function seedAdmin() {
         log(`❌ خطأ في الإصلاح: ${error.message}`, 'ERROR');
         console.error(error);
     }
-    // لا تغلق الاتصال هنا - سيتم إغلاقه تلقائياً عند انتهاء العملية
 }
 
-// تشغيل الدالة
-seedAdmin();// تشغيل الدالة
-
+// ✅ تصدير الدالة لاستخدامها في server.js
 module.exports = seedAdmin;
-
