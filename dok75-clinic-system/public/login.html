@@ -193,62 +193,44 @@
     </div>
     
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            
-            // تغيير حالة الزر أثناء التحميل
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تسجيل الدخول...';
-            
-            try {
-                const res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({username, password})
-                });
-                
-                const data = await res.json();
-                
-                if (data.success) {
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    
-                    // رسالة نجاح
-                    showAlert('تم تسجيل الدخول بنجاح! جاري التحويل...', 'success');
-                    
-                    // التوجيه حسب الدور
-                    setTimeout(() => {
-                        window.location.href = data.redirectTo || '/dashboard';
-                    }, 1000);
-                } else {
-                    showAlert('اسم المستخدم أو كلمة المرور غير صحيحة', 'error');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> تسجيل الدخول';
-                }
-            } catch (error) {
-                console.error('خطأ:', error);
-                showAlert('حدث خطأ في الاتصال بالخادم', 'error');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> تسجيل الدخول';
-            }
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    
+    // تغيير حالة الزر أثناء التحميل
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تسجيل الدخول...';
+    
+    try {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, password})
         });
         
-        function showAlert(message, type) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'}`;
-            alertDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+        const data = await res.json();
+        
+        if (data.success) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
             
-            const existingAlert = document.querySelector('.alert');
-            if (existingAlert) existingAlert.remove();
-            
-            document.querySelector('.login-card').insertBefore(alertDiv, document.querySelector('.login-footer'));
-            
-            setTimeout(() => alertDiv.remove(), 3000);
+            // ✅ التوجيه إلى الرابط الصحيح
+            window.location.href = data.redirectTo || '/dashboard';
+        } else {
+            alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> تسجيل الدخول';
         }
-    </script>
+    } catch (error) {
+        console.error('خطأ:', error);
+        alert('حدث خطأ في الاتصال بالخادم');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> تسجيل الدخول';
+    }
+});
+</script>
 </body>
 </html>
