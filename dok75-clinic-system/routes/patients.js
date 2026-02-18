@@ -10,22 +10,22 @@ router.use(protect);
 // إضافة مريض جديد (الكل)
 router.post('/', patientController.createPatient);
 
-// عرض جميع المرضى (للاستقبال والمشرف) - السطر 10
+// عرض جميع المرضى (للاستقبال والمشرف)
 router.get('/all', receptionistOnly, patientController.getAllPatients);
 
-// عرض مرضى الدكتور فقط (للدكتور) - السطر 12
+// عرض مرضى الدكتور فقط (للدكتور)
 router.get('/my-patients', doctorOnly, patientController.getDoctorPatients);
 
-// عرض مريض محدد - السطر 14
-router.get('/:id', patientBelongsToDoctor, patientController.getPatientById);
-
-// تحديث بيانات مريض (للاستقبال والدكتور) - السطر 16
-router.put('/:id', patientBelongsToDoctor, patientController.updatePatient);
-
-// البحث عن مريض - السطر 18
+// البحث عن مريض - يجب أن يأتي قبل /:id
 router.get('/search/:query', patientController.searchPatients);
 
-// إحصائيات المرضى - السطر 20
+// إحصائيات المرضى - يجب أن تأتي قبل /:id
 router.get('/stats/summary', patientController.getPatientStats);
+
+// عرض مريض محدد - يأتي في النهاية
+router.get('/:id', patientBelongsToDoctor, patientController.getPatientById);
+
+// تحديث بيانات مريض (للاستقبال والدكتور)
+router.put('/:id', patientBelongsToDoctor, patientController.updatePatient);
 
 module.exports = router;
