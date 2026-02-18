@@ -1,10 +1,9 @@
-const { Visit, Patient, User, Appointment } = require('../models');
-const { Op } = require('sequelize');
+const { Visit, Patient } = require('../models');
 
-// إنشاء زيارة جديدة
+// 1. إنشاء زيارة جديدة
 const createVisit = async (req, res) => {
     try {
-        const { patient_id, appointment_id, complaint, diagnosis, treatment, doctor_notes, prescriptions } = req.body;
+        const { patient_id, complaint, diagnosis, treatment, doctor_notes } = req.body;
 
         const patient = await Patient.findByPk(patient_id);
         if (!patient) {
@@ -14,123 +13,61 @@ const createVisit = async (req, res) => {
         const visit = await Visit.create({
             patient_id,
             doctor_id: req.user.id,
-            appointment_id: appointment_id || null,
             clinic_id: patient.clinic_id,
-            visit_date: new Date(),
             complaint,
             diagnosis,
             treatment,
-            doctor_notes,
-            prescriptions: prescriptions || []
-        });
-
-        // تحديث سجل المريض الطبي
-        const visitSummary = `[${new Date().toLocaleDateString('ar-SA')}] ${diagnosis || 'تشخيص'}\nملاحظات: ${doctor_notes || 'لا توجد'}\n`;
-        await patient.update({
-            medical_history: patient.medical_history 
-                ? visitSummary + patient.medical_history 
-                : visitSummary
-        });
-
-        if (appointment_id) {
-            await Appointment.update(
-                { status: 'completed' },
-                { where: { id: appointment_id } }
-            );
-        }
-
-        const createdVisit = await Visit.findByPk(visit.id, {
-            include: [
-                { model: Patient },
-                { model: User, as: 'doctor', attributes: ['id', 'full_name'] }
-            ]
+            doctor_notes
         });
 
         res.status(201).json({
             success: true,
-            message: 'تم تسجيل الزيارة بنجاح',
-            visit: createdVisit
+            message: 'تم تسجيل الزيارة',
+            visit
         });
-
     } catch (error) {
-        console.error('❌ خطأ في تسجيل الزيارة:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+        res.status(500).json({ error: error.message });
     }
 };
 
-// عرض زيارات مريض محدد
+// 2. عرض زيارات مريض
 const getPatientVisits = async (req, res) => {
     try {
-        const { patientId } = req.params;
-
         const visits = await Visit.findAll({
-            where: { patient_id: patientId },
-            include: [
-                { model: User, as: 'doctor', attributes: ['id', 'full_name'] },
-                { model: Appointment }
-            ],
-            order: [['visit_date', 'DESC']]
+            where: { patient_id: req.params.patientId },
+            order: [['createdAt', 'DESC']]
         });
-
-        res.json({ success: true, count: visits.length, visits });
+        res.json({ success: true, visits });
     } catch (error) {
-        console.error('❌ خطأ في جلب الزيارات:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+        res.status(500).json({ error: error.message });
     }
 };
 
-// عرض زيارة محددة
+// 3. عرض زيارة محددة
 const getVisitById = async (req, res) => {
     try {
-        const visit = await Visit.findByPk(req.params.id, {
-            include: [
-                { model: Patient },
-                { model: User, as: 'doctor', attributes: ['id', 'full_name'] },
-                { model: Appointment }
-            ]
-        });
-
+        const visit = await Visit.findByPk(req.params.id);
         if (!visit) {
-            return res.status(404).json({ error: 'الزيارة غير موجودة' });
+            return res.status(404).json({ error: 'غير موجود' });
         }
-
         res.json({ success: true, visit });
     } catch (error) {
-        console.error('❌ خطأ في جلب الزيارة:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+        res.status(500).json({ error: error.message });
     }
 };
 
-// تحديث زيارة
+// 4. تحديث زيارة
 const updateVisit = async (req, res) => {
     try {
         const visit = await Visit.findByPk(req.params.id);
         if (!visit) {
-            return res.status(404).json({ error: 'الزيارة غير موجودة' });
+            return res.status(404).json({ error: 'غير موجود' });
         }
-
-        if (visit.doctor_id !== req.user.id && req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'لا يمكنك تعديل هذه الزيارة' });
-        }
-
-        const { complaint, diagnosis, treatment, doctor_notes, prescriptions } = req.body;
-
-        await visit.update({
-            complaint: complaint || visit.complaint,
-            diagnosis: diagnosis || visit.diagnosis,
-            treatment: treatment || visit.treatment,
-            doctor_notes: doctor_notes || visit.doctor_notes,
-            prescriptions: prescriptions || visit.prescriptions
-        });
-
-        res.json({ 
-            success: true, 
-            message: 'تم تحديث الزيارة', 
-            visit 
-        });
+        
+        await visit.update(req.body);
+        res.json({ success: true, message: 'تم التحديث', visit });
     } catch (error) {
-        console.error('❌ خطأ في تحديث الزيارة:', error);
-        res.status(500).json({ error: 'حدث خطأ في الخادم' });
+        res.status(500).json({ error: error.message });
     }
 };
 
