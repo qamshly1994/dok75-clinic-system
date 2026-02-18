@@ -207,10 +207,8 @@ async function seedAdmin() {
     } catch (error) {
         log(`❌ خطأ في الإصلاح: ${error.message}`, 'ERROR');
         console.error(error);
-    } finally {
-        // إغلاق اتصال قاعدة البيانات
-        await sequelize.close();
     }
+    // لا تغلق الاتصال هنا - سيتم إغلاقه تلقائياً عند انتهاء العملية
 }
 
 // تشغيل الدالة
