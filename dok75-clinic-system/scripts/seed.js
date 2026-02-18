@@ -1,7 +1,7 @@
 /**
  * ============================================
  * Auto Seed Admin - إنشاء المشرف العام تلقائياً
- * نسخة محسنة لإنشاء مستخدم Admin
+ * نسخة محسنة مع إصلاح كلمات المرور
  * ============================================
  */
 
@@ -28,10 +28,46 @@ function log(message, type = 'INFO') {
     fs.appendFileSync(logFile, logMessage);
 }
 
+// دالة إصلاح كلمات المرور القديمة (جديدة)
+async function fixAllPasswords() {
+    try {
+        log('🔧 بدء إصلاح كلمات المرور القديمة...');
+        
+        const users = await User.findAll();
+        let fixedCount = 0;
+        
+        for (const user of users) {
+            // التحقق من أن كلمة المرور مشفرة (تبدأ بـ $2a$)
+            if (!user.password.startsWith('$2a$')) {
+                log(`⚠️ كلمة مرور غير مشفرة للمستخدم: ${user.username}`);
+                
+                // إعادة تشفير كلمة المرور
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(user.password, salt);
+                
+                await user.update({ password: hashedPassword });
+                log(`✅ تم إصلاح كلمة مرور المستخدم: ${user.username}`);
+                fixedCount++;
+            }
+        }
+        
+        if (fixedCount === 0) {
+            log('✅ جميع كلمات المرور مشفرة بشكل صحيح');
+        } else {
+            log(`✅ تم إصلاح ${fixedCount} كلمات مرور`);
+        }
+    } catch (error) {
+        log(`❌ خطأ في إصلاح كلمات المرور: ${error.message}`, 'ERROR');
+    }
+}
+
 // دالة إنشاء المشرف العام
 async function seedAdmin() {
     try {
         log('🔍 بدء التحقق من المستخدمين...');
+        
+        // إصلاح كلمات المرور أولاً (جديد)
+        await fixAllPasswords();
         
         // التحقق من وجود عيادة
         let clinic = await Clinic.findOne();
@@ -45,44 +81,54 @@ async function seedAdmin() {
             log('✅ تم إنشاء عيادة افتراضية');
         }
 
-        // التحقق من وجود مستخدم بصلاحية admin
-        const adminExists = await User.findOne({ where: { role: 'admin' } });
+        // التأكد من وجود مستخدم admin (جديد)
+        let adminUser = await User.findOne({ where: { role: 'admin' } });
         
-        if (adminExists) {
-            log(`✅ يوجد بالفعل مستخدم بصلاحية admin: ${adminExists.username}`);
-            return;
-        }
-
-        // التحقق من وجود super_admin وتحويله إلى admin
-        const superAdmin = await User.findOne({ where: { role: 'super_admin' } });
-        
-        if (superAdmin) {
-            log(`🔄 تحويل المستخدم ${superAdmin.username} من super_admin إلى admin...`);
-            await superAdmin.update({ role: 'admin' });
-            log(`✅ تم تحويل المستخدم إلى admin بنجاح`);
+        if (!adminUser) {
+            // البحث عن super_admin
+            const superAdmin = await User.findOne({ where: { role: 'super_admin' } });
             
-            // حفظ بيانات الدخول
-            saveCredentials(superAdmin.username, 'Admin@2026', superAdmin.full_name);
-            return;
+            if (superAdmin) {
+                // تحويل super_admin إلى admin
+                await superAdmin.update({ role: 'admin' });
+                log('✅ تم تحويل super_admin إلى admin');
+                
+                // تحديث كلمة المرور للتأكد
+                const hashedPassword = await bcrypt.hash('Admin@2026', 10);
+                await superAdmin.update({ password: hashedPassword });
+                log('✅ تم تحديث كلمة مرور admin إلى Admin@2026');
+                
+                saveCredentials(superAdmin.username, 'Admin@2026', superAdmin.full_name);
+            } else {
+                // إنشاء admin جديد
+                const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'Admin@2026', 10);
+                adminUser = await User.create({
+                    username: process.env.ADMIN_USERNAME || 'admin',
+                    password: hashedPassword,
+                    full_name: process.env.ADMIN_FULL_NAME || 'المهندس عبدالرزاق',
+                    role: 'admin',
+                    clinic_id: clinic.id,
+                    is_active: true
+                });
+                log('✅ تم إنشاء مستخدم admin جديد');
+                saveCredentials(adminUser.username, process.env.ADMIN_PASSWORD || 'Admin@2026', adminUser.full_name);
+            }
+        } else {
+            // تحديث كلمة مرور admin للتأكد
+            const hashedPassword = await bcrypt.hash('Admin@2026', 10);
+            await adminUser.update({ password: hashedPassword });
+            log('✅ تم تحديث كلمة مرور admin إلى Admin@2026');
         }
 
-        // إذا لم يوجد أي مستخدم، إنشاء admin جديد
-        log('⚠️ لم يتم العثور على مستخدم admin. جاري إنشاء مستخدم جديد...');
-        
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'Admin@2026', salt);
-        
-        const admin = await User.create({
-            username: process.env.ADMIN_USERNAME || 'admin',
-            password: hashedPassword,
-            full_name: process.env.ADMIN_FULL_NAME || 'المهندس عبدالرزاق',
-            role: 'admin',
-            clinic_id: clinic.id,
-            is_active: true
-        });
-
-        log('✅ تم إنشاء مستخدم admin جديد بنجاح', 'SUCCESS');
-        saveCredentials(admin.username, process.env.ADMIN_PASSWORD || 'Admin@2026', admin.full_name);
+        // التأكد من أن جميع المستخدمين لديهم كلمات مرور مشفرة
+        const users = await User.findAll();
+        for (const user of users) {
+            if (!user.password.startsWith('$2a$')) {
+                const hashedPassword = await bcrypt.hash('Temp123', 10);
+                await user.update({ password: hashedPassword });
+                log(`⚠️ تم إصلاح كلمة مرور المستخدم ${user.username} (كلمة المرور الجديدة: Temp123)`);
+            }
+        }
 
     } catch (error) {
         log(`❌ خطأ في إنشاء المشرف: ${error.message}`, 'ERROR');
