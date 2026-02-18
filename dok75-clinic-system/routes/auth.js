@@ -39,16 +39,16 @@ router.post('/login', async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRE }
         );
 
-        // توجيه حسب الدور
-        let dashboardUrl = '/dashboard';
-        if (user.role === 'admin') dashboardUrl = '/admin-dashboard';
-        else if (user.role === 'doctor') dashboardUrl = '/doctor-dashboard';
-        else if (user.role === 'receptionist') dashboardUrl = '/reception-dashboard';
+        // ✅ التوجيه الصحيح حسب الدور
+        let redirectTo = '/dashboard';
+        if (user.role === 'admin') redirectTo = '/admin-dashboard';
+        else if (user.role === 'doctor') redirectTo = '/doctor-dashboard';
+        else if (user.role === 'receptionist') redirectTo = '/reception-dashboard';
 
         res.json({
             success: true,
             token,
-            redirectTo: dashboardUrl,
+            redirectTo, // إرسال الرابط الصحيح للواجهة الأمامية
             user: {
                 id: user.id,
                 username: user.username,
