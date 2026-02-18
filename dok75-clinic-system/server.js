@@ -23,7 +23,8 @@ const { sequelize } = require('./models');
 
 // استيراد دالة Auto Seed
 const seedAdmin = require('./scripts/seed');
-
+// تجاهل طلبات favicon.ico
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 // ============================================
 // استيراد المسارات (Routes)
 // ============================================
