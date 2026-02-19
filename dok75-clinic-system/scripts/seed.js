@@ -1,94 +1,117 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const path = require('path');
-const { sequelize, User, Clinic } = require('./models');
+ * ============================================
+ * Auto Seed Admin - إنشاء المشرف العام تلقائياً
+ * نسخة محسنة لإنشاء مستخدم Admin
+ * ============================================
+ */
+
+const { User, Clinic } = require('../models');
 const bcrypt = require('bcryptjs');
-const { Op } = require('sequelize');
+const fs = require('fs');
+const path = require('path');
+const dotenv = require('dotenv');
 
 dotenv.config();
-const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// دالة تسجيل الأحداث
+function log(message, type = 'INFO') {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] [${type}] ${message}\n`;
+    console.log(logMessage.trim());
+    
+    const logDir = path.join(__dirname, '../logs');
+    if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+    }
+    
+    const logFile = path.join(logDir, 'seed.log');
+    fs.appendFileSync(logFile, logMessage);
+}
 
-// ============================================
-// مسارات بسيطة للتوجيه
-// ============================================
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
-app.get('/admin-dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html')));
-app.get('/doctor-dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'doctor-dashboard.html')));
-app.get('/reception-dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reception-dashboard.html')));
-
-// ============================================
-// دالة بدء التشغيل الرئيسية
-// ============================================
-const startServer = async () => {
+// دالة إنشاء المشرف العام
+async function seedAdmin() {
     try {
-        // 1. الاتصال بقاعدة البيانات
-        await sequelize.authenticate();
-        console.log('✅ تم الاتصال بقاعدة البيانات');
-
-        // 2. مزامنة النماذج
-        await sequelize.sync({ alter: true });
-        console.log('✅ تم مزامنة النماذج');
-
-        // ============================================
-        // 3. الكود السحري لإنشاء المستخدم admin (مضمن هنا)
-        // ============================================
-        console.log('🔍 جاري التحقق من وجود المستخدم admin...');
-        // التأكد من وجود عيادة
+        log('🔍 بدء التحقق من المستخدمين...');
+        
+        // التحقق من وجود عيادة
         let clinic = await Clinic.findOne();
         if (!clinic) {
             clinic = await Clinic.create({
-                name: 'عيادة DOK75 الافتراضية',
+                name: process.env.CLINIC_NAME || 'مركز DOK75 الطبي',
+                address: 'المركز الرئيسي',
                 phone: process.env.DEV_PHONE || '0995973668',
                 is_active: true
             });
-            console.log('✅ تم إنشاء عيادة افتراضية.');
+            log('✅ تم إنشاء عيادة افتراضية');
         }
 
-        // البحث عن مستخدم admin
-        let adminUser = await User.findOne({ where: { [Op.or]: [{ username: 'admin' }, { role: 'admin' }] } });
-
-        if (adminUser) {
-            // تحديث المستخدم الموجود
-            console.log(`✅ تم العثور على مستخدم: ${adminUser.username}. جاري تحديث صلاحياته...`);
-            const hashedPassword = await bcrypt.hash('Admin@2026', 10);
-            await adminUser.update({ password: hashedPassword, role: 'admin', is_active: true });
-            console.log('✅ تم تحديث المستخدم إلى admin.');
-        } else {
-            // إنشاء مستخدم admin جديد
-            console.log('⚠️ لم يتم العثور على مستخدم admin. جاري إنشاء واحد جديد...');
-            const hashedPassword = await bcrypt.hash('Admin@2026', 10);
-            await User.create({
-                username: 'admin',
-                password: hashedPassword,
-                full_name: 'مدير النظام',
-                role: 'admin',
-                clinic_id: clinic.id,
-                is_active: true
-            });
-            console.log('✅ تم إنشاء مستخدم admin جديد.');
+        // التحقق من وجود مستخدم بصلاحية admin
+        const adminExists = await User.findOne({ where: { role: 'admin' } });
+        
+        if (adminExists) {
+            log(`✅ يوجد بالفعل مستخدم بصلاحية admin: ${adminExists.username}`);
+            return;
         }
-        console.log('📋 بيانات الدخول النهائية: admin / Admin@2026');
-        // ============================================
-        // نهاية الكود السحري
-        // ============================================
 
-        // 4. تشغيل الخادم
-        app.listen(PORT, () => {
-            console.log('=================================');
-            console.log(`🚀 خادم DOK75 شغال على المنفذ ${PORT}`);
-            console.log(`🔗 الرابط: http://localhost:${PORT}`);
-            console.log('=================================');
+        // التحقق من وجود super_admin وتحويله إلى admin
+        const superAdmin = await User.findOne({ where: { role: 'super_admin' } });
+        
+        if (superAdmin) {
+            log(`🔄 تحويل المستخدم ${superAdmin.username} من super_admin إلى admin...`);
+            await superAdmin.update({ role: 'admin' });
+            log(`✅ تم تحويل المستخدم إلى admin بنجاح`);
+            
+            // حفظ بيانات الدخول
+            saveCredentials(superAdmin.username, 'Admin@2026', superAdmin.full_name);
+            return;
+        }
+
+        // إذا لم يوجد أي مستخدم، إنشاء admin جديد
+        log('⚠️ لم يتم العثور على مستخدم admin. جاري إنشاء مستخدم جديد...');
+        
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'Admin@2026', salt);
+        
+        const admin = await User.create({
+            username: process.env.ADMIN_USERNAME || 'admin',
+            password: hashedPassword,
+            full_name: process.env.ADMIN_FULL_NAME || 'المهندس عبدالرزاق',
+            role: 'admin',
+            clinic_id: clinic.id,
+            is_active: true
         });
 
-    } catch (error) {
-        console.error('❌ فشل تشغيل الخادم:', error);
-        process.exit(1);
-    }
-};
+        log('✅ تم إنشاء مستخدم admin جديد بنجاح', 'SUCCESS');
+        saveCredentials(admin.username, process.env.ADMIN_PASSWORD || 'Admin@2026', admin.full_name);
 
-startServer();
+    } catch (error) {
+        log(`❌ خطأ في إنشاء المشرف: ${error.message}`, 'ERROR');
+        console.error(error);
+    }
+}
+
+// دالة حفظ بيانات الدخول
+function saveCredentials(username, password, fullName) {
+    try {
+        const credentialsFile = path.join(__dirname, '../admin-credentials.txt');
+        const credentials = `
+===========================================
+✅ بيانات الدخول إلى النظام
+===========================================
+📅 التاريخ: ${new Date().toLocaleString('ar-SA')}
+📋 اسم المستخدم: ${username}
+🔑 كلمة المرور: ${password}
+👤 الاسم الكامل: ${fullName}
+🔗 رابط الدخول: ${process.env.APP_URL || 'https://dok75-clinic-system.onrender.com'}
+===========================================
+⚠️ احتفظ بهذه المعلومات في مكان آمن
+===========================================
+        `;
+        
+        fs.writeFileSync(credentialsFile, credentials);
+        log(`✅ تم حفظ بيانات الدخول في: ${credentialsFile}`, 'SUCCESS');
+    } catch (err) {
+        log(`⚠️ لم يتم حفظ ملف البيانات: ${err.message}`, 'WARNING');
+    }
+}
+
+module.exports = seedAdmin;
