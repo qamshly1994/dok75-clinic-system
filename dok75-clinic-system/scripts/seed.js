@@ -1,6 +1,6 @@
 /**
  * ============================================
- * Auto Seed Admin - نسخة نهائية مبسطة
+ * Auto Seed Admin - نسخة نهائية مع تحويل super_admin
  * ============================================
  */
 
@@ -14,7 +14,7 @@ async function seedAdmin() {
     try {
         console.log('🔧 بدء الإصلاح...');
         
-        // التأكد من وجود عيادة
+        // 1. التأكد من وجود عيادة
         let clinic = await Clinic.findOne();
         if (!clinic) {
             clinic = await Clinic.create({
@@ -22,12 +22,32 @@ async function seedAdmin() {
                 phone: '0995973668',
                 is_active: true
             });
+            console.log('✅ تم إنشاء عيادة');
         }
 
-        // البحث عن مستخدم admin
-        let admin = await User.findOne({ where: { username: 'admin' } });
+        // 2. البحث عن مستخدم admin (أو super_admin)
+        let admin = await User.findOne({ 
+            where: { 
+                [require('sequelize').Op.or]: [
+                    { username: 'admin' },
+                    { role: 'admin' },
+                    { role: 'super_admin' }
+                ]
+            } 
+        });
         
-        if (!admin) {
+        if (admin) {
+            // تحديث المستخدم الموجود
+            const hashedPassword = await bcrypt.hash('Admin@2026', 10);
+            await admin.update({ 
+                username: 'admin', // توحيد اسم المستخدم
+                password: hashedPassword,
+                full_name: 'مدير النظام',
+                role: 'admin', // تحويل أي دور إلى admin
+                is_active: true
+            });
+            console.log('✅ تم تحديث المستخدم إلى admin');
+        } else {
             // إنشاء admin جديد
             const hashedPassword = await bcrypt.hash('Admin@2026', 10);
             admin = await User.create({
@@ -39,17 +59,13 @@ async function seedAdmin() {
                 is_active: true
             });
             console.log('✅ تم إنشاء admin جديد');
-        } else {
-            // تحديث كلمة مرور admin
-            const hashedPassword = await bcrypt.hash('Admin@2026', 10);
-            await admin.update({ 
-                password: hashedPassword,
-                role: 'admin' // التأكد من أن الدور admin
-            });
-            console.log('✅ تم تحديث admin');
         }
 
-        console.log('📋 بيانات الدخول: admin / Admin@2026');
+        console.log('\n📋 بيانات الدخول:');
+        console.log('   Username: admin');
+        console.log('   Password: Admin@2026');
+        console.log('   Role: admin');
+        console.log('\n✅ تم الإصلاح بنجاح');
 
     } catch (error) {
         console.error('❌ خطأ:', error);
