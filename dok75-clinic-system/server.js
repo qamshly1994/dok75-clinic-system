@@ -189,9 +189,14 @@ const startServer = async () => {
         await sequelize.sync({ alter: true });
         console.log('✅ تم مزامنة النماذج مع قاعدة البيانات');
 
-        // تشغيل Auto Seed Admin (إنشاء المشرف العام إذا لم يكن موجوداً)
-        await seedAdmin();
-        console.log('✅ تم التحقق من وجود المشرف العام');
+        // ✅ تشغيل Auto Seed Admin مع معالجة الأخطاء (لا يوقف الخادم)
+        try {
+            await seedAdmin();
+            console.log('✅ تم التحقق من وجود المشرف العام');
+        } catch (seedError) {
+            console.error('⚠️ تحذير: فشل تشغيل seed:', seedError.message);
+            // الخادم يستمر في العمل حتى لو فشل الـ seed
+        }
 
         // تشغيل الخادم
         app.listen(PORT, () => {
