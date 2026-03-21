@@ -25,6 +25,27 @@ const { sequelize } = require('./models');
 const seedAdmin = require('./scripts/seed');
 
 // ============================================
+// تعديل إعدادات SSL لـ Render
+// ============================================
+if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
+    try {
+        if (sequelize && sequelize.config) {
+            // إضافة إعدادات SSL للاتصال بقاعدة البيانات
+            if (!sequelize.config.dialectOptions) {
+                sequelize.config.dialectOptions = {};
+            }
+            sequelize.config.dialectOptions.ssl = {
+                require: true,
+                rejectUnauthorized: false
+            };
+            console.log('✅ تم تفعيل إعدادات SSL لقاعدة البيانات');
+        }
+    } catch (err) {
+        console.log('⚠️ تحذير: فشل تفعيل SSL:', err.message);
+    }
+}
+
+// ============================================
 // إنشاء تطبيق Express (يجب أن يكون قبل أي استخدام لـ app)
 // ============================================
 const app = express();
@@ -227,6 +248,10 @@ const startServer = async () => {
 
     } catch (error) {
         console.error('❌ فشل الاتصال بقاعدة البيانات:', error);
+        // محاولة عرض معلومات أكثر تفصيلاً عن الخطأ
+        if (error.parent) {
+            console.error('تفاصيل إضافية:', error.parent.message);
+        }
         process.exit(1);
     }
 };
